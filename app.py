@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import swisseph as swe
 import os
+from datetime import datetime
 
 app = Flask(__name__)
 swe.set_ephe_path(None)
@@ -107,15 +108,17 @@ def calculate():
             'longitude': longitude,
             'julianDay': jd,
             'planets': planets,
-            'calculatedAt': swe.julday(2000, 1, 1, 12.0)  # J2000 epoch for reference
+            'calculatedAt': datetime.utcnow().isoformat()
         })
         
     except Exception as e:
+        import traceback
         return jsonify({
             'error': str(e),
-            'message': 'Calculation failed'
+            'message': 'Calculation failed',
+            'traceback': traceback.format_exc()
         }), 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
