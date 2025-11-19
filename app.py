@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 swe.set_ephe_path(None)
 
-# Planet constants
+# Planet constants (Chiron removed - needs ephemeris files)
 PLANETS = {
     'Sun': swe.SUN,
     'Moon': swe.MOON,
@@ -18,8 +18,7 @@ PLANETS = {
     'Uranus': swe.URANUS,
     'Neptune': swe.NEPTUNE,
     'Pluto': swe.PLUTO,
-    'North Node': swe.TRUE_NODE,
-    'Chiron': swe.CHIRON
+    'North Node': swe.TRUE_NODE
 }
 
 def normalize_degree(deg):
