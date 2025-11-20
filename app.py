@@ -6,7 +6,7 @@ from datetime import datetime
 app = Flask(__name__)
 swe.set_ephe_path(None)
 
-# Planet constants (Chiron removed - needs ephemeris files)
+# Planet constants
 PLANETS = {
     'Sun': swe.SUN,
     'Moon': swe.MOON,
@@ -22,14 +22,12 @@ PLANETS = {
 }
 
 def normalize_degree(deg):
-    """Normalize degree to 0-360 range"""
     deg = deg % 360
     if deg < 0:
         deg += 360
     return deg
 
 def get_zodiac_sign(degree):
-    """Get zodiac sign from degree"""
     signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
              'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces']
     return signs[int(normalize_degree(degree) / 30)]
@@ -40,7 +38,7 @@ def home():
         "status": "Swiss Ephemeris API is running",
         "version": "2.0",
         "endpoints": {
-            "/calculate": "POST - Calculate all planets",
+            "/calculate": "POST - Calculate all planets and houses",
             "/": "GET - This status page"
         }
     })
@@ -50,7 +48,6 @@ def calculate():
     try:
         data = request.json
         
-        # Parse input
         birth_date = data['birthDate']
         birth_time = data['time']
         latitude = float(data['latitude'])
@@ -65,7 +62,6 @@ def calculate():
         
         # Calculate all planets
         planets = []
-        
         for name, planet_id in PLANETS.items():
             result = swe.calc_ut(jd, planet_id)
             
@@ -85,7 +81,7 @@ def calculate():
                 'isRetro': 'true' if speed < 0 else 'false'
             })
         
-        # Add South Node (180° from North Node)
+        # Add South Node
         north_node = next(p for p in planets if p['name'] == 'North Node')
         south_node_deg = normalize_degree(north_node['fullDegree'] + 180)
         
@@ -100,6 +96,44 @@ def calculate():
             'isRetro': 'true'
         })
         
+        # *** CALCULATE HOUSES (Placidus system) ***
+        # hsys = 'P' for Placidus, 'K' for Koch, 'W' for Whole Sign, etc.
+        houses_result = swe.houses(jd, latitude, longitude, b'P')
+        
+        # houses_result returns (cusps, ascmc)
+        # cusps = house cusps 1-12 (index 0 is unused, 1-12 are the houses)
+        # ascmc = [Ascendant, MC, ARMC, Vertex, Equatorial Ascendant, Co-Ascendant Koch, Co-Ascendant Munkasey, Polar Ascendant]
+        
+        cusps = houses_result[0]
+        ascmc = houses_result[1]
+        
+        ascendant_deg = ascmc[0]  # Ascendant
+        mc_deg = ascmc[1]          # Midheaven (MC)
+        
+        houses = {
+            'ascendant': {
+                'degree': normalize_degree(ascendant_deg),
+                'sign': get_zodiac_sign(ascendant_deg),
+                'degreeInSign': normalize_degree(ascendant_deg) % 30
+            },
+            'midheaven': {
+                'degree': normalize_degree(mc_deg),
+                'sign': get_zodiac_sign(mc_deg),
+                'degreeInSign': normalize_degree(mc_deg) % 30
+            },
+            'cusps': []
+        }
+        
+        # Add house cusps (1-12)
+        for i in range(1, 13):
+            cusp_deg = cusps[i]
+            houses['cusps'].append({
+                'house': i,
+                'degree': normalize_degree(cusp_deg),
+                'sign': get_zodiac_sign(cusp_deg),
+                'degreeInSign': normalize_degree(cusp_deg) % 30
+            })
+        
         return jsonify({
             'birthDate': birth_date,
             'birthTime': birth_time,
@@ -107,6 +141,7 @@ def calculate():
             'longitude': longitude,
             'julianDay': jd,
             'planets': planets,
+            'houses': houses,
             'calculatedAt': datetime.utcnow().isoformat()
         })
         
