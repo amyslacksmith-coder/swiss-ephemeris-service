@@ -2,9 +2,13 @@ from flask import Flask, request, jsonify
 import swisseph as swe
 import os
 from datetime import datetime
+import sys
 
 app = Flask(__name__)
 swe.set_ephe_path(None)
+
+# Force stdout to flush immediately
+sys.stdout.flush()
 
 # Planet constants
 PLANETS = {
@@ -36,7 +40,7 @@ def get_zodiac_sign(degree):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "2.1",
+        "version": "2.2",
         "endpoints": {
             "/calculate": "POST - Calculate all planets and houses",
             "/": "GET - This status page"
@@ -59,6 +63,8 @@ def calculate():
         # Calculate Julian Day (UT)
         time_decimal = hour + minute / 60.0
         jd = swe.julday(year, month, day, time_decimal)
+        
+        app.logger.info(f"Calculating for JD: {jd}, Lat: {latitude}, Lon: {longitude}")
         
         # Calculate all planets
         planets = []
@@ -97,13 +103,20 @@ def calculate():
         })
         
         # *** CALCULATE HOUSES (Placidus system) ***
+        houses = None
         try:
-            # swe.houses returns (cusps, ascmc) tuple
-            # hsys: 'P' = Placidus (most common in Western astrology)
-            houses_result = swe.houses(jd, latitude, longitude, b'P')
+            app.logger.info("Attempting house calculation...")
             
-            cusps = houses_result[0]  # Tuple of house cusps (index 0 unused, 1-12 are houses)
-            ascmc = houses_result[1]   # Tuple: [Asc, MC, ARMC, Vertex, ...]
+            # USE STRING 'P' NOT BYTES b'P'
+            houses_result = swe.houses(jd, latitude, longitude, 'P')
+            
+            app.logger.info(f"Houses result type: {type(houses_result)}")
+            app.logger.info(f"Houses result: {houses_result}")
+            
+            cusps = houses_result[0]
+            ascmc = houses_result[1]
+            
+            app.logger.info(f"Ascendant raw: {ascmc[0]}, MC raw: {ascmc[1]}")
             
             ascendant_deg = normalize_degree(ascmc[0])
             mc_deg = normalize_degree(ascmc[1])
@@ -131,10 +144,14 @@ def calculate():
                     'degreeInSign': cusp_deg % 30,
                     'sign': get_zodiac_sign(cusp_deg)
                 })
+            
+            app.logger.info(f"Houses calculated successfully: Asc={ascendant_deg}, MC={mc_deg}")
                 
         except Exception as house_error:
-            print(f"House calculation error: {house_error}")
-            # If houses fail, return None but don't crash
+            app.logger.error(f"HOUSE CALCULATION ERROR: {house_error}")
+            app.logger.error(f"Error type: {type(house_error)}")
+            import traceback
+            app.logger.error(f"Traceback: {traceback.format_exc()}")
             houses = None
         
         return jsonify({
@@ -150,8 +167,8 @@ def calculate():
         
     except Exception as e:
         import traceback
-        print(f"Error: {e}")
-        print(traceback.format_exc())
+        app.logger.error(f"MAIN ERROR: {e}")
+        app.logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({
             'error': str(e),
             'message': 'Calculation failed',
