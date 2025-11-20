@@ -36,7 +36,7 @@ def get_zodiac_sign(degree):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "2.0",
+        "version": "2.1",
         "endpoints": {
             "/calculate": "POST - Calculate all planets and houses",
             "/": "GET - This status page"
@@ -97,42 +97,45 @@ def calculate():
         })
         
         # *** CALCULATE HOUSES (Placidus system) ***
-        # hsys = 'P' for Placidus, 'K' for Koch, 'W' for Whole Sign, etc.
-        houses_result = swe.houses(jd, latitude, longitude, b'P')
-        
-        # houses_result returns (cusps, ascmc)
-        # cusps = house cusps 1-12 (index 0 is unused, 1-12 are the houses)
-        # ascmc = [Ascendant, MC, ARMC, Vertex, Equatorial Ascendant, Co-Ascendant Koch, Co-Ascendant Munkasey, Polar Ascendant]
-        
-        cusps = houses_result[0]
-        ascmc = houses_result[1]
-        
-        ascendant_deg = ascmc[0]  # Ascendant
-        mc_deg = ascmc[1]          # Midheaven (MC)
-        
-        houses = {
-            'ascendant': {
-                'degree': normalize_degree(ascendant_deg),
-                'sign': get_zodiac_sign(ascendant_deg),
-                'degreeInSign': normalize_degree(ascendant_deg) % 30
-            },
-            'midheaven': {
-                'degree': normalize_degree(mc_deg),
-                'sign': get_zodiac_sign(mc_deg),
-                'degreeInSign': normalize_degree(mc_deg) % 30
-            },
-            'cusps': []
-        }
-        
-        # Add house cusps (1-12)
-        for i in range(1, 13):
-            cusp_deg = cusps[i]
-            houses['cusps'].append({
-                'house': i,
-                'degree': normalize_degree(cusp_deg),
-                'sign': get_zodiac_sign(cusp_deg),
-                'degreeInSign': normalize_degree(cusp_deg) % 30
-            })
+        try:
+            # swe.houses returns (cusps, ascmc) tuple
+            # hsys: 'P' = Placidus (most common in Western astrology)
+            houses_result = swe.houses(jd, latitude, longitude, b'P')
+            
+            cusps = houses_result[0]  # Tuple of house cusps (index 0 unused, 1-12 are houses)
+            ascmc = houses_result[1]   # Tuple: [Asc, MC, ARMC, Vertex, ...]
+            
+            ascendant_deg = normalize_degree(ascmc[0])
+            mc_deg = normalize_degree(ascmc[1])
+            
+            houses = {
+                'ascendant': {
+                    'degree': ascendant_deg,
+                    'degreeInSign': ascendant_deg % 30,
+                    'sign': get_zodiac_sign(ascendant_deg)
+                },
+                'midheaven': {
+                    'degree': mc_deg,
+                    'degreeInSign': mc_deg % 30,
+                    'sign': get_zodiac_sign(mc_deg)
+                },
+                'cusps': []
+            }
+            
+            # Add house cusps (houses 1-12)
+            for i in range(1, 13):
+                cusp_deg = normalize_degree(cusps[i])
+                houses['cusps'].append({
+                    'house': i,
+                    'degree': cusp_deg,
+                    'degreeInSign': cusp_deg % 30,
+                    'sign': get_zodiac_sign(cusp_deg)
+                })
+                
+        except Exception as house_error:
+            print(f"House calculation error: {house_error}")
+            # If houses fail, return None but don't crash
+            houses = None
         
         return jsonify({
             'birthDate': birth_date,
@@ -147,6 +150,8 @@ def calculate():
         
     except Exception as e:
         import traceback
+        print(f"Error: {e}")
+        print(traceback.format_exc())
         return jsonify({
             'error': str(e),
             'message': 'Calculation failed',
