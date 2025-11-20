@@ -1,3 +1,4 @@
+  
 from flask import Flask, request, jsonify  
 import swisseph as swe  
 import os  
@@ -54,8 +55,8 @@ def calculate():
         data = request.json  
         birth_date = data['birthDate']        # format "YYYY-MM-DD"  
         birth_time = data['time']             # format "HH:MM" (24h)  
-        latitude = float(data['latitude'])    # decimal degrees (positive East)  
-        longitude = float(data['longitude'])  # decimal degrees (positive East)  
+        latitude = float(data['latitude'])    # decimal degrees, North=positive, South=negative  
+        longitude = float(data['longitude'])  # decimal degrees, East=positive, West=negative  
 
         year, month, day = map(int, birth_date.split('-'))  
         hour, minute = map(int, birth_time.split(':'))  
@@ -98,7 +99,8 @@ def calculate():
             'isRetro': True  
         })  
 
-        # Calculate houses (Placidus only)  
+        # Calculate houses (Placidus) - Python binding signature
+        # NO 4th argument! It defaults to Placidus.
         cusps, ascmc = swe.houses(jd, latitude, longitude)  
 
         asc_deg = normalize_degree(ascmc[0])  
@@ -150,4 +152,4 @@ def calculate():
 
 if __name__ == '__main__':  
     port = int(os.environ.get('PORT', 8080))  
-    app.run(host='0.0.0.0', port=port, debug=True)  
+    app.run(host='0.0.0.0', port=port, debug=True)
