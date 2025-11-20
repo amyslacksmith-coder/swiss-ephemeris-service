@@ -1,4 +1,3 @@
-  
 from flask import Flask, request, jsonify  
 import swisseph as swe  
 import os  
@@ -100,7 +99,6 @@ def calculate():
         })  
 
         # Calculate houses (Placidus) - Python binding signature
-        # NO 4th argument! It defaults to Placidus.
         cusps, ascmc = swe.houses(jd, latitude, longitude)  
 
         asc_deg = normalize_degree(ascmc[0])  
@@ -120,10 +118,10 @@ def calculate():
             'cusps': []  
         }  
 
-        for i in range(1, 13):  
+        for i in range(12):  # FIXED: iterate 0-11 instead of 1-12
             cusp_deg = normalize_degree(cusps[i])  
             houses['cusps'].append({  
-                'house': i,  
+                'house': i + 1,  # House numbers are 1-12
                 'degree': cusp_deg,  
                 'degreeInSign': cusp_deg % 30.0,  
                 'sign': get_zodiac_sign(cusp_deg)  
