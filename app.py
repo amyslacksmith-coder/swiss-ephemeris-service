@@ -5,7 +5,7 @@ from datetime import datetime
 import sys  
 
 app = Flask(__name__)  
-swe.set_ephe_path(None)  # uses default location or environment path  
+swe.set_ephe_path('.')  # Changed to root where seas_18.se1 is
 
 # Force stdout to flush immediately  
 sys.stdout.flush()  
@@ -68,7 +68,7 @@ def calculate():
         # Calculate planet positions  
         planets = []  
         for name, planet_id in PLANETS.items():  
-            result = swe.calc_ut(jd, planet_id, swe.FLG_MOSEPH)
+            result = swe.calc_ut(jd, planet_id)
             longitude_deg = result[0][0]  
             latitude_deg = result[0][1]  
             distance = result[0][2]  
