@@ -22,6 +22,7 @@ PLANETS = {
     'Uranus': swe.URANUS,  
     'Neptune': swe.NEPTUNE,  
     'Pluto': swe.PLUTO,  
+    'Chiron': swe.CHIRON,  
     'North Node': swe.TRUE_NODE  
 }  
 
