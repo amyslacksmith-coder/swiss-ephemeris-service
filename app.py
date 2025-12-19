@@ -68,7 +68,7 @@ def calculate():
         # Calculate planet positions  
         planets = []  
         for name, planet_id in PLANETS.items():  
-            result = swe.calc_ut(jd, planet_id)  
+            result = swe.calc_ut(jd, planet_id, swe.FLG_MOSEPH)
             longitude_deg = result[0][0]  
             latitude_deg = result[0][1]  
             distance = result[0][2]  
