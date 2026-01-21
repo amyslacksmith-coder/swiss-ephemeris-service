@@ -7,10 +7,8 @@ import sys
 app = Flask(__name__)
 swe.set_ephe_path('.')
 
-# Force stdout to flush immediately
 sys.stdout.flush()
 
-# Check what ephemeris is being used at startup
 print("=" * 50)
 print("EPHEMERIS CHECK AT STARTUP")
 print("=" * 50)
@@ -24,8 +22,6 @@ else:
     print("SUCCESS: Using Swiss Ephemeris with JPL data")
 print("=" * 50)
 
-# Planet constants
-# Note: We calculate all three Lilith variants but output with specific names
 PLANETS = {
     'Sun': swe.SUN,
     'Moon': swe.MOON,
@@ -44,10 +40,24 @@ PLANETS = {
     'Juno': swe.JUNO,
     'Vesta': swe.VESTA,
     'Pholus': swe.PHOLUS,
-    # Lilith variants - we'll rename these in output
     'Mean Lilith': swe.MEAN_APOG,
     'True Lilith': swe.OSCU_APOG,
     'Interpolated Lilith': swe.INTP_APOG,
+}
+
+HOUSE_SYSTEMS = {
+    'P': 'Placidus',
+    'K': 'Koch',
+    'E': 'Equal',
+    'W': 'Whole Sign',
+    'R': 'Regiomontanus',
+    'C': 'Campanus',
+    'B': 'Alcabitius',
+    'O': 'Porphyry',
+    'T': 'Topocentric',
+    'M': 'Morinus',
+    'X': 'Meridian',
+    'V': 'Vehlow Equal'
 }
 
 def normalize_degree(deg):
@@ -66,11 +76,12 @@ def get_zodiac_sign(degree):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "2.2",
+        "version": "2.3",
         "endpoints": {
             "/calculate": "POST - Calculate all planets, asteroids, and houses",
             "/": "GET - This status page"
         },
+        "house_systems": HOUSE_SYSTEMS,
         "bodies": [
             "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
             "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
@@ -90,18 +101,20 @@ def calculate():
         birth_time = data['time']
         latitude = float(data['latitude'])
         longitude = float(data['longitude'])
+        house_system = data.get('houseSystem', 'P')
+        
+        if house_system not in HOUSE_SYSTEMS:
+            house_system = 'P'
 
-        print(f"INPUT: {birth_date} {birth_time} at ({latitude}, {longitude})")
+        print(f"INPUT: {birth_date} {birth_time} at ({latitude}, {longitude}) house_system={house_system} ({HOUSE_SYSTEMS[house_system]})")
 
         year, month, day = map(int, birth_date.split('-'))
         hour, minute = map(int, birth_time.split(':'))
         time_decimal = hour + minute / 60.0
 
-        # Julian Day (UT)
         jd = swe.julday(year, month, day, time_decimal)
         print(f"Julian Day: {jd}")
 
-        # Calculate planet positions
         planets = []
         for name, planet_id in PLANETS.items():
             try:
@@ -124,7 +137,6 @@ def calculate():
             except Exception as e:
                 print(f"Could not calculate {name}: {e}")
 
-        # Add South Node (opposite North Node)
         north_node = next((p for p in planets if p['name'] == 'North Node'), None)
         if north_node:
             south_node_deg = normalize_degree(north_node['fullDegree'] + 180.0)
@@ -139,16 +151,8 @@ def calculate():
                 'isRetro': True
             })
 
-        # ==============================================
-        # LILITH AND PRIAPUS (SELENA) CALCULATIONS
-        # ==============================================
-        # Interpolated Lilith is the most accurate for Western astrology
-        # Its opposite (Interpolated Priapus) = White Moon Selena (lunar perigee)
-        
-        # Get Mean Lilith and output as "Black Moon Lilith" (matches most reference sites)
         mean_lilith = next((p for p in planets if p['name'] == 'Mean Lilith'), None)
         if mean_lilith:
-            # Add as "Black Moon Lilith" - using Mean Lilith to match reference sites
             planets.append({
                 'name': 'Black Moon Lilith',
                 'fullDegree': mean_lilith['fullDegree'],
@@ -160,7 +164,6 @@ def calculate():
                 'isRetro': mean_lilith['isRetro']
             })
             
-            # Add White Moon Selena as opposite of Mean Lilith (lunar perigee)
             selena_deg = normalize_degree(mean_lilith['fullDegree'] + 180.0)
             planets.append({
                 'name': 'White Moon Selena',
@@ -173,9 +176,6 @@ def calculate():
                 'isRetro': False
             })
 
-        # Add Mean Priapus (opposite Mean Lilith) - for reference
-        mean_lilith = next((p for p in planets if p['name'] == 'Mean Lilith'), None)
-        if mean_lilith:
             mean_priapus_deg = normalize_degree(mean_lilith['fullDegree'] + 180.0)
             planets.append({
                 'name': 'Mean Priapus',
@@ -188,7 +188,6 @@ def calculate():
                 'isRetro': False
             })
 
-        # Add True Priapus (opposite True Lilith) - for reference
         true_lilith = next((p for p in planets if p['name'] == 'True Lilith'), None)
         if true_lilith:
             true_priapus_deg = normalize_degree(true_lilith['fullDegree'] + 180.0)
@@ -203,7 +202,6 @@ def calculate():
                 'isRetro': False
             })
 
-        # Add Selena h56 (Russian/Avestan tradition, ~7 year orbit) - fictional but used by some
         try:
             selena_h56_result = swe.calc_ut(jd, 56)
             selena_h56_lon = selena_h56_result[0][0]
@@ -220,25 +218,20 @@ def calculate():
         except Exception as e:
             print(f"Could not calculate Selena h56: {e}")
 
-        # ============================================================
-        # HOUSE CALCULATION - Using swe.houses_ex for more precision
-        # ============================================================
-        houses_result = swe.houses_ex(jd, latitude, longitude, b'P')
+        houses_result = swe.houses_ex(jd, latitude, longitude, house_system.encode())
         cusps = houses_result[0]
         ascmc = houses_result[1]
 
         asc_deg = normalize_degree(ascmc[0])
         mc_deg = normalize_degree(ascmc[1])
-        armc = ascmc[2]  # Sidereal time in degrees
+        armc = ascmc[2]
         vertex_deg = normalize_degree(ascmc[3])
 
-        # Descendant and IC
         desc_deg = normalize_degree(asc_deg + 180)
         ic_deg = normalize_degree(mc_deg + 180)
 
-        print(f"HOUSES: ASC={asc_deg:.4f}, MC={mc_deg:.4f}, ARMC={armc:.4f}, Vertex={vertex_deg:.4f}")
+        print(f"HOUSES ({HOUSE_SYSTEMS[house_system]}): ASC={asc_deg:.4f}, MC={mc_deg:.4f}, ARMC={armc:.4f}, Vertex={vertex_deg:.4f}")
 
-        # Add Vertex to planets list
         planets.append({
             'name': 'Vertex',
             'fullDegree': vertex_deg,
@@ -250,18 +243,13 @@ def calculate():
             'isRetro': False
         })
 
-        # Calculate Part of Fortune
         sun_data = next((p for p in planets if p['name'] == 'Sun'), None)
         moon_data = next((p for p in planets if p['name'] == 'Moon'), None)
 
         if sun_data and moon_data:
             sun_lon = sun_data['fullDegree']
             moon_lon = moon_data['fullDegree']
-
-            # Normalize positions relative to ASC
             sun_from_asc = normalize_degree(sun_lon - asc_deg)
-            # If sun_from_asc < 180, Sun is in lower hemisphere (houses 1-6) = night
-            # If sun_from_asc >= 180, Sun is in upper hemisphere (houses 7-12) = day
             is_day_chart = sun_from_asc >= 180
 
             if is_day_chart:
@@ -281,8 +269,9 @@ def calculate():
                 'is_day_chart': is_day_chart
             })
 
-        # Build houses object
         houses = {
+            'system': house_system,
+            'system_name': HOUSE_SYSTEMS.get(house_system, 'Unknown'),
             'ascendant': {
                 'degree': asc_deg,
                 'degreeInSign': asc_deg % 30.0,
@@ -327,6 +316,8 @@ def calculate():
             'latitude': latitude,
             'longitude': longitude,
             'julianDay': jd,
+            'houseSystem': house_system,
+            'houseSystemName': HOUSE_SYSTEMS.get(house_system, 'Unknown'),
             'planets': planets,
             'houses': houses,
             'calculatedAt': datetime.utcnow().isoformat() + 'Z'
@@ -345,3 +336,23 @@ def calculate():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=True)
+```
+
+---
+
+**Cursor prompt:**
+```
+Update the Supabase edge functions to support house system selection for astrology calculations.
+
+The Railway Swiss Ephemeris API now accepts an optional "houseSystem" parameter (single letter code) with these options:
+- P = Placidus (default)
+- K = Koch
+- E = Equal
+- W = Whole Sign
+- R = Regiomontanus
+- C = Campanus
+- B = Alcabitius
+- O = Porphyry
+- T = Topocentric
+- M = Morinus
+
