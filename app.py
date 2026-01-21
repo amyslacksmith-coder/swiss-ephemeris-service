@@ -50,15 +50,16 @@ HOUSE_SYSTEMS = {
     'K': 'Koch',
     'E': 'Equal',
     'W': 'Whole Sign',
-    'C': 'Campanus',
     'R': 'Regiomontanus',
+    'C': 'Campanus',
     'B': 'Alcabitius',
     'O': 'Porphyry',
     'T': 'Topocentric',
-    'M': 'Morinus'
+    'M': 'Morinus',
+    'X': 'Meridian',
+    'V': 'Vehlow Equal'
 }
 
-# Aspect definitions: name, angle, default orb for lights (Sun/Moon), default orb for planets
 ASPECTS = {
     'conjunction': {'angle': 0, 'orb_lights': 10, 'orb_planets': 8, 'symbol': '☌'},
     'opposition': {'angle': 180, 'orb_lights': 10, 'orb_planets': 8, 'symbol': '☍'},
@@ -73,8 +74,8 @@ ASPECTS = {
     'biquintile': {'angle': 144, 'orb_lights': 2, 'orb_planets': 1, 'symbol': 'bQ'}
 }
 
-# Planets to include in aspect calculations (main bodies only)
-ASPECT_PLANETS = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Chiron', 'North Node', 'Black Moon Lilith']
+ASPECT_PLANETS = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 
+                  'Uranus', 'Neptune', 'Pluto', 'Chiron', 'North Node', 'Black Moon Lilith']
 
 def normalize_degree(deg):
     deg = deg % 360.0
@@ -92,21 +93,17 @@ def is_light(planet_name):
     return planet_name in ['Sun', 'Moon']
 
 def calculate_aspect(planet1, planet2):
-    """Calculate aspect between two planets if within orb"""
     deg1 = planet1['fullDegree']
     deg2 = planet2['fullDegree']
     speed1 = planet1.get('speed', 0)
     speed2 = planet2.get('speed', 0)
     
-    # Calculate angle between planets
     diff = abs(deg1 - deg2)
     if diff > 180:
         diff = 360 - diff
     
-    # Determine orb based on whether lights are involved
     use_light_orb = is_light(planet1['name']) or is_light(planet2['name'])
     
-    # Check each aspect type
     for aspect_name, aspect_data in ASPECTS.items():
         target_angle = aspect_data['angle']
         orb = aspect_data['orb_lights'] if use_light_orb else aspect_data['orb_planets']
@@ -114,10 +111,6 @@ def calculate_aspect(planet1, planet2):
         actual_orb = abs(diff - target_angle)
         
         if actual_orb <= orb:
-            # Determine if applying or separating
-            # Applying = aspect getting tighter, Separating = aspect getting looser
-            # We need to check if the faster planet is moving toward or away from exact
-            
             raw_diff = deg1 - deg2
             if raw_diff < -180:
                 raw_diff += 360
@@ -126,7 +119,6 @@ def calculate_aspect(planet1, planet2):
             
             relative_speed = speed1 - speed2
             
-            # For conjunction/opposition logic differs from other aspects
             if target_angle == 0:
                 is_applying = (raw_diff > 0 and relative_speed < 0) or (raw_diff < 0 and relative_speed > 0)
             elif target_angle == 180:
@@ -135,7 +127,6 @@ def calculate_aspect(planet1, planet2):
                 else:
                     is_applying = relative_speed < 0 if raw_diff > 0 else relative_speed > 0
             else:
-                # For other aspects, simplified logic
                 is_applying = actual_orb > 0 and (
                     (raw_diff > 0 and relative_speed < 0) or 
                     (raw_diff < 0 and relative_speed > 0)
@@ -154,26 +145,14 @@ def calculate_aspect(planet1, planet2):
     return None
 
 def calculate_all_aspects(planets, include_angles=False, asc_deg=None, mc_deg=None):
-    """Calculate all aspects between planets"""
     aspects = []
     
-    # Filter to only aspect-worthy planets
     aspect_bodies = [p for p in planets if p['name'] in ASPECT_PLANETS]
     
-    # Optionally add angles
     if include_angles and asc_deg is not None and mc_deg is not None:
-        aspect_bodies.append({
-            'name': 'Ascendant',
-            'fullDegree': asc_deg,
-            'speed': 0
-        })
-        aspect_bodies.append({
-            'name': 'Midheaven',
-            'fullDegree': mc_deg,
-            'speed': 0
-        })
+        aspect_bodies.append({'name': 'Ascendant', 'fullDegree': asc_deg, 'speed': 0})
+        aspect_bodies.append({'name': 'Midheaven', 'fullDegree': mc_deg, 'speed': 0})
     
-    # Calculate aspects between all pairs
     for i in range(len(aspect_bodies)):
         for j in range(i + 1, len(aspect_bodies)):
             planet1 = aspect_bodies[i]
@@ -188,41 +167,34 @@ def calculate_all_aspects(planets, include_angles=False, asc_deg=None, mc_deg=No
                     **aspect
                 })
     
-    # Sort by orb (tightest first)
     aspects.sort(key=lambda x: x['orb'])
     
     return aspects
 
 def detect_aspect_patterns(aspects):
-    """Detect major aspect patterns like Grand Trine, T-Square, etc."""
     patterns = []
     
-    # Build adjacency for pattern detection
     trines = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'trine']
     squares = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'square']
     oppositions = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'opposition']
     sextiles = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'sextile']
+    quincunxes = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'quincunx']
     
-    # Grand Trine: 3 planets all trine each other
-    all_planets = set()
+    all_trine_planets = set()
     for t in trines:
-        all_planets.add(t[0])
-        all_planets.add(t[1])
+        all_trine_planets.add(t[0])
+        all_trine_planets.add(t[1])
     
-    for p1 in all_planets:
-        for p2 in all_planets:
-            for p3 in all_planets:
-                if p1 < p2 < p3:  # Avoid duplicates
+    for p1 in all_trine_planets:
+        for p2 in all_trine_planets:
+            for p3 in all_trine_planets:
+                if p1 < p2 < p3:
                     has_t1 = (p1, p2) in trines or (p2, p1) in trines
                     has_t2 = (p2, p3) in trines or (p3, p2) in trines
                     has_t3 = (p1, p3) in trines or (p3, p1) in trines
                     if has_t1 and has_t2 and has_t3:
-                        patterns.append({
-                            'pattern': 'Grand Trine',
-                            'planets': [p1, p2, p3]
-                        })
+                        patterns.append({'pattern': 'Grand Trine', 'planets': [p1, p2, p3]})
     
-    # T-Square: 2 planets in opposition, both square a third
     for opp in oppositions:
         p1, p2 = opp
         for sq in squares:
@@ -230,37 +202,25 @@ def detect_aspect_patterns(aspects):
             if sq[0] == p1 or sq[1] == p1:
                 sq_planet = sq[1] if sq[0] == p1 else sq[0]
             if sq_planet:
-                # Check if sq_planet also squares p2
                 has_sq2 = (p2, sq_planet) in squares or (sq_planet, p2) in squares
                 if has_sq2:
                     pattern_planets = sorted([p1, p2, sq_planet])
-                    pattern = {
-                        'pattern': 'T-Square',
-                        'planets': pattern_planets,
-                        'apex': sq_planet
-                    }
+                    pattern = {'pattern': 'T-Square', 'planets': pattern_planets, 'apex': sq_planet}
                     if pattern not in patterns:
                         patterns.append(pattern)
     
-    # Grand Cross: 4 planets, 2 oppositions, all square each other
     if len(oppositions) >= 2:
         for i, opp1 in enumerate(oppositions):
             for opp2 in oppositions[i+1:]:
                 p1, p2 = opp1
                 p3, p4 = opp2
-                # Check all 4 squares exist
                 has_sq1 = (p1, p3) in squares or (p3, p1) in squares
                 has_sq2 = (p1, p4) in squares or (p4, p1) in squares
                 has_sq3 = (p2, p3) in squares or (p3, p2) in squares
                 has_sq4 = (p2, p4) in squares or (p4, p2) in squares
                 if has_sq1 and has_sq2 and has_sq3 and has_sq4:
-                    patterns.append({
-                        'pattern': 'Grand Cross',
-                        'planets': sorted([p1, p2, p3, p4])
-                    })
+                    patterns.append({'pattern': 'Grand Cross', 'planets': sorted([p1, p2, p3, p4])})
     
-    # Yod (Finger of God): 2 planets sextile each other, both quincunx a third
-    quincunxes = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'quincunx']
     for sx in sextiles:
         p1, p2 = sx
         for qx in quincunxes:
@@ -268,14 +228,9 @@ def detect_aspect_patterns(aspects):
             if qx[0] == p1 or qx[1] == p1:
                 apex = qx[1] if qx[0] == p1 else qx[0]
             if apex and apex != p2:
-                # Check if apex also quincunx p2
                 has_qx2 = (p2, apex) in quincunxes or (apex, p2) in quincunxes
                 if has_qx2:
-                    pattern = {
-                        'pattern': 'Yod',
-                        'planets': sorted([p1, p2, apex]),
-                        'apex': apex
-                    }
+                    pattern = {'pattern': 'Yod', 'planets': sorted([p1, p2, apex]), 'apex': apex}
                     if pattern not in patterns:
                         patterns.append(pattern)
     
@@ -296,9 +251,9 @@ def home():
             "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
             "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
             "Ceres", "Pallas", "Juno", "Vesta", "Pholus",
-            "Black Moon Lilith", "Mean Lilith", "True Lilith",
-            "White Moon Selena", "Mean Priapus", "True Priapus",
-            "Selena h56", "Vertex", "Part of Fortune"
+            "Black Moon Lilith (Interpolated)", "Mean Lilith", "True Lilith",
+            "White Moon Selena (Interpolated Priapus)", "Mean Priapus", "True Priapus",
+            "Selena h56 (Russian)", "Vertex", "Part of Fortune"
         ],
         "ephemeris_files": [f for f in os.listdir('.') if f.endswith('.se1')]
     })
@@ -311,7 +266,7 @@ def calculate():
         birth_time = data['time']
         latitude = float(data['latitude'])
         longitude = float(data['longitude'])
-        house_system = str(data.get('houseSystem', 'P')).upper()
+        house_system = data.get('houseSystem', 'P')
         include_aspects = data.get('includeAspects', True)
         include_patterns = data.get('includePatterns', True)
         include_angle_aspects = data.get('includeAngleAspects', True)
@@ -431,8 +386,7 @@ def calculate():
         except Exception as e:
             print(f"Could not calculate Selena h56: {e}")
 
-        hsys = house_system.encode('ascii')[0]
-        houses_result = swe.houses_ex(jd, latitude, longitude, hsys)
+        houses_result = swe.houses_ex(jd, latitude, longitude, house_system.encode())
         cusps = houses_result[0]
         ascmc = houses_result[1]
 
