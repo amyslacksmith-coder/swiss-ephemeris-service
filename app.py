@@ -145,31 +145,31 @@ def calculate():
         # Interpolated Lilith is the most accurate for Western astrology
         # Its opposite (Interpolated Priapus) = White Moon Selena (lunar perigee)
         
-        # Get Interpolated Lilith and output as "Black Moon Lilith" (standard Western name)
-        interp_lilith = next((p for p in planets if p['name'] == 'Interpolated Lilith'), None)
-        if interp_lilith:
-            # Add as "Black Moon Lilith" - the standard Western astrology name
+        # Get Mean Lilith and output as "Black Moon Lilith" (matches most reference sites)
+        mean_lilith = next((p for p in planets if p['name'] == 'Mean Lilith'), None)
+        if mean_lilith:
+            # Add as "Black Moon Lilith" - using Mean Lilith to match reference sites
             planets.append({
                 'name': 'Black Moon Lilith',
-                'fullDegree': interp_lilith['fullDegree'],
-                'degreeInSign': interp_lilith['degreeInSign'],
-                'sign': interp_lilith['sign'],
-                'latitude': interp_lilith['latitude'],
-                'distance': interp_lilith['distance'],
-                'speed': interp_lilith['speed'],
-                'isRetro': interp_lilith['isRetro']
+                'fullDegree': mean_lilith['fullDegree'],
+                'degreeInSign': mean_lilith['degreeInSign'],
+                'sign': mean_lilith['sign'],
+                'latitude': mean_lilith['latitude'],
+                'distance': mean_lilith['distance'],
+                'speed': mean_lilith['speed'],
+                'isRetro': mean_lilith['isRetro']
             })
             
-            # Add White Moon Selena as opposite of Interpolated Lilith (astronomically real lunar perigee)
-            selena_deg = normalize_degree(interp_lilith['fullDegree'] + 180.0)
+            # Add White Moon Selena as opposite of Mean Lilith (lunar perigee)
+            selena_deg = normalize_degree(mean_lilith['fullDegree'] + 180.0)
             planets.append({
                 'name': 'White Moon Selena',
                 'fullDegree': selena_deg,
                 'degreeInSign': selena_deg % 30.0,
                 'sign': get_zodiac_sign(selena_deg),
-                'latitude': -interp_lilith['latitude'],
-                'distance': interp_lilith['distance'],
-                'speed': interp_lilith['speed'],
+                'latitude': -mean_lilith['latitude'],
+                'distance': mean_lilith['distance'],
+                'speed': mean_lilith['speed'],
                 'isRetro': False
             })
 
