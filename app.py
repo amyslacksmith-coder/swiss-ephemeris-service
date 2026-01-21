@@ -128,7 +128,7 @@ def calculate():
                 'isRetro': True
             })
 
-        # Add White Moon Selena (if available)
+        # Add White Moon Selena (h56 - Russian/Avestan tradition, ~7 year orbit)
         try:
             selena_result = swe.calc_ut(jd, 56)
             selena_lon = selena_result[0][0]
@@ -144,6 +144,22 @@ def calculate():
             })
         except Exception as e:
             print(f"Could not calculate White Moon Selena: {e}")
+
+        # Add Priapus (opposite Black Moon Lilith = lunar perigee)
+        # This is what many Western sites call "White Moon Selena"
+        lilith_data = next((p for p in planets if p['name'] == 'Black Moon Lilith'), None)
+        if lilith_data:
+            priapus_deg = normalize_degree(lilith_data['fullDegree'] + 180.0)
+            planets.append({
+                'name': 'Priapus',
+                'fullDegree': priapus_deg,
+                'degreeInSign': priapus_deg % 30.0,
+                'sign': get_zodiac_sign(priapus_deg),
+                'latitude': -lilith_data['latitude'],
+                'distance': lilith_data['distance'],
+                'speed': lilith_data['speed'],
+                'isRetro': False
+            })
 
         # ============================================================
         # HOUSE CALCULATION - Using swe.houses_ex for more precision
