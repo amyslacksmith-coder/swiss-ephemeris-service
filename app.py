@@ -43,7 +43,7 @@ PLANETS = {
     'Juno': swe.JUNO,
     'Vesta': swe.VESTA,
     'Pholus': swe.PHOLUS,
-    'Black Moon Lilith': swe.MEAN_APOG,
+    'Black Moon Lilith': swe.OSCU_APOG,  # True/Oscillating Lilith
 }
 
 def normalize_degree(deg):
