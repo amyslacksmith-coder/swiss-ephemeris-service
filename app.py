@@ -25,6 +25,7 @@ else:
 print("=" * 50)
 
 # Planet constants
+# Note: We calculate all three Lilith variants but output with specific names
 PLANETS = {
     'Sun': swe.SUN,
     'Moon': swe.MOON,
@@ -43,7 +44,8 @@ PLANETS = {
     'Juno': swe.JUNO,
     'Vesta': swe.VESTA,
     'Pholus': swe.PHOLUS,
-    'Black Moon Lilith': swe.MEAN_APOG,
+    # Lilith variants - we'll rename these in output
+    'Mean Lilith': swe.MEAN_APOG,
     'True Lilith': swe.OSCU_APOG,
     'Interpolated Lilith': swe.INTP_APOG,
 }
@@ -64,12 +66,19 @@ def get_zodiac_sign(degree):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "2.1",
+        "version": "2.2",
         "endpoints": {
             "/calculate": "POST - Calculate all planets, asteroids, and houses",
             "/": "GET - This status page"
         },
-        "bodies": list(PLANETS.keys()) + ['South Node', 'White Moon Selena', 'Vertex', 'Part of Fortune'],
+        "bodies": [
+            "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
+            "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
+            "Ceres", "Pallas", "Juno", "Vesta", "Pholus",
+            "Black Moon Lilith (Interpolated)", "Mean Lilith", "True Lilith",
+            "White Moon Selena (Interpolated Priapus)", "Mean Priapus", "True Priapus",
+            "Selena h56 (Russian)", "Vertex", "Part of Fortune"
+        ],
         "ephemeris_files": [f for f in os.listdir('.') if f.endswith('.se1')]
     })
 
@@ -130,84 +139,90 @@ def calculate():
                 'isRetro': True
             })
 
-        # Add White Moon Selena (h56 - Russian/Avestan tradition, ~7 year orbit)
-        try:
-            selena_result = swe.calc_ut(jd, 56)
-            selena_lon = selena_result[0][0]
+        # ==============================================
+        # LILITH AND PRIAPUS (SELENA) CALCULATIONS
+        # ==============================================
+        # Interpolated Lilith is the most accurate for Western astrology
+        # Its opposite (Interpolated Priapus) = White Moon Selena (lunar perigee)
+        
+        # Get Interpolated Lilith and output as "Black Moon Lilith" (standard Western name)
+        interp_lilith = next((p for p in planets if p['name'] == 'Interpolated Lilith'), None)
+        if interp_lilith:
+            # Add as "Black Moon Lilith" - the standard Western astrology name
+            planets.append({
+                'name': 'Black Moon Lilith',
+                'fullDegree': interp_lilith['fullDegree'],
+                'degreeInSign': interp_lilith['degreeInSign'],
+                'sign': interp_lilith['sign'],
+                'latitude': interp_lilith['latitude'],
+                'distance': interp_lilith['distance'],
+                'speed': interp_lilith['speed'],
+                'isRetro': interp_lilith['isRetro']
+            })
+            
+            # Add White Moon Selena as opposite of Interpolated Lilith (astronomically real lunar perigee)
+            selena_deg = normalize_degree(interp_lilith['fullDegree'] + 180.0)
             planets.append({
                 'name': 'White Moon Selena',
-                'fullDegree': normalize_degree(selena_lon),
-                'degreeInSign': normalize_degree(selena_lon) % 30.0,
-                'sign': get_zodiac_sign(selena_lon),
-                'latitude': selena_result[0][1],
-                'distance': selena_result[0][2],
-                'speed': selena_result[0][3],
-                'isRetro': selena_result[0][3] < 0
-            })
-        except Exception as e:
-            print(f"Could not calculate White Moon Selena: {e}")
-
-        # Add Priapus (opposite Mean Black Moon Lilith = lunar perigee)
-        lilith_data = next((p for p in planets if p['name'] == 'Black Moon Lilith'), None)
-        if lilith_data:
-            priapus_deg = normalize_degree(lilith_data['fullDegree'] + 180.0)
-            planets.append({
-                'name': 'Priapus',
-                'fullDegree': priapus_deg,
-                'degreeInSign': priapus_deg % 30.0,
-                'sign': get_zodiac_sign(priapus_deg),
-                'latitude': -lilith_data['latitude'],
-                'distance': lilith_data['distance'],
-                'speed': lilith_data['speed'],
+                'fullDegree': selena_deg,
+                'degreeInSign': selena_deg % 30.0,
+                'sign': get_zodiac_sign(selena_deg),
+                'latitude': -interp_lilith['latitude'],
+                'distance': interp_lilith['distance'],
+                'speed': interp_lilith['speed'],
                 'isRetro': False
             })
 
-        # Add True Priapus (opposite True Lilith)
-        # This is what many Western sites call "White Moon Selena"
-        true_lilith_data = next((p for p in planets if p['name'] == 'True Lilith'), None)
-        if true_lilith_data:
-            true_priapus_deg = normalize_degree(true_lilith_data['fullDegree'] + 180.0)
+        # Add Mean Priapus (opposite Mean Lilith) - for reference
+        mean_lilith = next((p for p in planets if p['name'] == 'Mean Lilith'), None)
+        if mean_lilith:
+            mean_priapus_deg = normalize_degree(mean_lilith['fullDegree'] + 180.0)
+            planets.append({
+                'name': 'Mean Priapus',
+                'fullDegree': mean_priapus_deg,
+                'degreeInSign': mean_priapus_deg % 30.0,
+                'sign': get_zodiac_sign(mean_priapus_deg),
+                'latitude': -mean_lilith['latitude'],
+                'distance': mean_lilith['distance'],
+                'speed': mean_lilith['speed'],
+                'isRetro': False
+            })
+
+        # Add True Priapus (opposite True Lilith) - for reference
+        true_lilith = next((p for p in planets if p['name'] == 'True Lilith'), None)
+        if true_lilith:
+            true_priapus_deg = normalize_degree(true_lilith['fullDegree'] + 180.0)
             planets.append({
                 'name': 'True Priapus',
                 'fullDegree': true_priapus_deg,
                 'degreeInSign': true_priapus_deg % 30.0,
                 'sign': get_zodiac_sign(true_priapus_deg),
-                'latitude': -true_lilith_data['latitude'],
-                'distance': true_lilith_data['distance'],
-                'speed': true_lilith_data['speed'],
+                'latitude': -true_lilith['latitude'],
+                'distance': true_lilith['distance'],
+                'speed': true_lilith['speed'],
                 'isRetro': False
             })
 
-        # Add Interpolated Priapus (opposite Interpolated Lilith)
-        interp_lilith_data = next((p for p in planets if p['name'] == 'Interpolated Lilith'), None)
-        if interp_lilith_data:
-            interp_priapus_deg = normalize_degree(interp_lilith_data['fullDegree'] + 180.0)
+        # Add Selena h56 (Russian/Avestan tradition, ~7 year orbit) - fictional but used by some
+        try:
+            selena_h56_result = swe.calc_ut(jd, 56)
+            selena_h56_lon = selena_h56_result[0][0]
             planets.append({
-                'name': 'Interpolated Priapus',
-                'fullDegree': interp_priapus_deg,
-                'degreeInSign': interp_priapus_deg % 30.0,
-                'sign': get_zodiac_sign(interp_priapus_deg),
-                'latitude': -interp_lilith_data['latitude'],
-                'distance': interp_lilith_data['distance'],
-                'speed': interp_lilith_data['speed'],
-                'isRetro': False
+                'name': 'Selena h56',
+                'fullDegree': normalize_degree(selena_h56_lon),
+                'degreeInSign': normalize_degree(selena_h56_lon) % 30.0,
+                'sign': get_zodiac_sign(selena_h56_lon),
+                'latitude': selena_h56_result[0][1],
+                'distance': selena_h56_result[0][2],
+                'speed': selena_h56_result[0][3],
+                'isRetro': selena_h56_result[0][3] < 0
             })
+        except Exception as e:
+            print(f"Could not calculate Selena h56: {e}")
 
         # ============================================================
         # HOUSE CALCULATION - Using swe.houses_ex for more precision
         # ============================================================
-        # swe.houses_ex returns (cusps, ascmc, cusp_speed, ascmc_speed)
-        # cusps[0-11] = house cusps 1-12
-        # ascmc[0] = Ascendant
-        # ascmc[1] = MC
-        # ascmc[2] = ARMC (sidereal time)
-        # ascmc[3] = Vertex
-        # ascmc[4] = Equatorial Ascendant
-        # ascmc[5] = Co-Ascendant (Koch)
-        # ascmc[6] = Co-Ascendant (Munkasey)
-        # ascmc[7] = Polar Ascendant
-        
-        # Use SEFLG_SIDEREAL=0 for tropical (default)
         houses_result = swe.houses_ex(jd, latitude, longitude, b'P')
         cusps = houses_result[0]
         ascmc = houses_result[1]
@@ -243,27 +258,6 @@ def calculate():
             sun_lon = sun_data['fullDegree']
             moon_lon = moon_data['fullDegree']
 
-            # Day chart: Sun is above horizon
-            # Check if Sun is in houses 7-12 (above horizon)
-            # Simpler method: Sun above horizon if ASC < Sun < DESC (adjusted for wrap)
-            sun_above = False
-            if asc_deg < desc_deg:
-                sun_above = asc_deg <= sun_lon < desc_deg
-            else:
-                sun_above = sun_lon >= asc_deg or sun_lon < desc_deg
-
-            # Actually inverted - Sun ABOVE horizon means between DESC and ASC going through MC
-            # Let's use the standard: if Sun is in upper half of chart
-            # Upper half = houses 7, 8, 9, 10, 11, 12
-            # Sun is above horizon if it's between IC and MC going through DESC
-            # Simplest: check if Sun longitude is between DESC and ASC (going backwards through MC)
-            
-            # Standard check: Sun above horizon = day chart
-            # Sun is above horizon when it's in the upper semicircle
-            # From ASC counterclockwise to DESC = below horizon (houses 1-6)
-            # From DESC counterclockwise to ASC = above horizon (houses 7-12)
-            
-            # Recalculate properly:
             # Normalize positions relative to ASC
             sun_from_asc = normalize_degree(sun_lon - asc_deg)
             # If sun_from_asc < 180, Sun is in lower hemisphere (houses 1-6) = night
