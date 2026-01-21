@@ -356,3 +356,17 @@ The Railway Swiss Ephemeris API now accepts an optional "houseSystem" parameter 
 - T = Topocentric
 - M = Morinus
 
+Changes needed:
+
+1. In calculate-ephemeris-data/index.ts:
+   - Accept houseSystem from request body with default 'P'
+   - Pass houseSystem to the Railway API in callSwissEphemeris function
+   - Include house_system and house_system_name in the response
+
+2. In calculate-astrology-western/index.ts:
+   - Accept houseSystem from input with default 'P'
+   - Pass houseSystem to callEphemeris function
+   - Include house_system and house_system_name in the result object
+   - Add house_system to input_fingerprint for verification
+
+The response should clearly show which house system was used so we know what was calculated.
