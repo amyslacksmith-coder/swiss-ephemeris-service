@@ -50,14 +50,12 @@ HOUSE_SYSTEMS = {
     'K': 'Koch',
     'E': 'Equal',
     'W': 'Whole Sign',
-    'R': 'Regiomontanus',
     'C': 'Campanus',
+    'R': 'Regiomontanus',
     'B': 'Alcabitius',
     'O': 'Porphyry',
     'T': 'Topocentric',
-    'M': 'Morinus',
-    'X': 'Meridian',
-    'V': 'Vehlow Equal'
+    'M': 'Morinus'
 }
 
 def normalize_degree(deg):
@@ -76,7 +74,7 @@ def get_zodiac_sign(degree):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "2.3",
+        "version": "2.4",
         "endpoints": {
             "/calculate": "POST - Calculate all planets, asteroids, and houses",
             "/": "GET - This status page"
@@ -86,9 +84,9 @@ def home():
             "Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn",
             "Uranus", "Neptune", "Pluto", "Chiron", "North Node", "South Node",
             "Ceres", "Pallas", "Juno", "Vesta", "Pholus",
-            "Black Moon Lilith (Interpolated)", "Mean Lilith", "True Lilith",
-            "White Moon Selena (Interpolated Priapus)", "Mean Priapus", "True Priapus",
-            "Selena h56 (Russian)", "Vertex", "Part of Fortune"
+            "Black Moon Lilith", "Mean Lilith", "True Lilith",
+            "White Moon Selena", "Mean Priapus", "True Priapus",
+            "Selena h56", "Vertex", "Part of Fortune"
         ],
         "ephemeris_files": [f for f in os.listdir('.') if f.endswith('.se1')]
     })
@@ -101,7 +99,7 @@ def calculate():
         birth_time = data['time']
         latitude = float(data['latitude'])
         longitude = float(data['longitude'])
-        house_system = data.get('houseSystem', 'P')
+        house_system = str(data.get('houseSystem', 'P')).upper()
         
         if house_system not in HOUSE_SYSTEMS:
             house_system = 'P'
@@ -218,7 +216,8 @@ def calculate():
         except Exception as e:
             print(f"Could not calculate Selena h56: {e}")
 
-        houses_result = swe.houses_ex(jd, latitude, longitude, house_system.encode())
+        hsys = house_system.encode('ascii')[0]
+        houses_result = swe.houses_ex(jd, latitude, longitude, hsys)
         cusps = houses_result[0]
         ascmc = houses_result[1]
 
@@ -336,37 +335,3 @@ def calculate():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=True)
-```
-
----
-
-**Cursor prompt:**
-```
-Update the Supabase edge functions to support house system selection for astrology calculations.
-
-The Railway Swiss Ephemeris API now accepts an optional "houseSystem" parameter (single letter code) with these options:
-- P = Placidus (default)
-- K = Koch
-- E = Equal
-- W = Whole Sign
-- R = Regiomontanus
-- C = Campanus
-- B = Alcabitius
-- O = Porphyry
-- T = Topocentric
-- M = Morinus
-
-Changes needed:
-
-1. In calculate-ephemeris-data/index.ts:
-   - Accept houseSystem from request body with default 'P'
-   - Pass houseSystem to the Railway API in callSwissEphemeris function
-   - Include house_system and house_system_name in the response
-
-2. In calculate-astrology-western/index.ts:
-   - Accept houseSystem from input with default 'P'
-   - Pass houseSystem to callEphemeris function
-   - Include house_system and house_system_name in the result object
-   - Add house_system to input_fingerprint for verification
-
-The response should clearly show which house system was used so we know what was calculated.
