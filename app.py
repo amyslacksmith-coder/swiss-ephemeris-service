@@ -10,6 +10,22 @@ swe.set_ephe_path('.')  # Changed to root where seas_18.se1 is
 # Force stdout to flush immediately  
 sys.stdout.flush()  
 
+# Check what ephemeris is being used at startup
+print("=" * 50)
+print("EPHEMERIS CHECK AT STARTUP")
+print("=" * 50)
+print("Current directory:", os.getcwd())
+print("Files in current dir:", os.listdir('.'))
+print("Ephemeris path set to:", swe.get_ephe_path())
+# Check if we have the ephemeris files
+ephe_files = [f for f in os.listdir('.') if f.endswith('.se1')]
+print("Ephemeris files found:", ephe_files)
+if not ephe_files:
+    print("WARNING: No .se1 files found - will fall back to Moshier!")
+else:
+    print("SUCCESS: Using Swiss Ephemeris with JPL data")
+print("=" * 50)
+
 # Planet constants  
 PLANETS = {  
     'Sun': swe.SUN,  
@@ -55,7 +71,8 @@ def home():
             "/calculate": "POST - Calculate all planets, asteroids, and houses",  
             "/": "GET - This status page"  
         },
-        "bodies": list(PLANETS.keys()) + ['South Node', 'White Moon Selena', 'Vertex', 'Part of Fortune']
+        "bodies": list(PLANETS.keys()) + ['South Node', 'White Moon Selena', 'Vertex', 'Part of Fortune'],
+        "ephemeris_files": [f for f in os.listdir('.') if f.endswith('.se1')]
     })  
 
 @app.route('/calculate', methods=['POST'])  
@@ -66,6 +83,9 @@ def calculate():
         birth_time = data['time']             # format "HH:MM" (24h)  
         latitude = float(data['latitude'])    # decimal degrees, North=positive, South=negative  
         longitude = float(data['longitude'])  # decimal degrees, East=positive, West=negative  
+
+        # Log input for debugging
+        app.logger.info(f"INPUT: {birth_date} {birth_time} at ({latitude}, {longitude})")
 
         year, month, day = map(int, birth_date.split('-'))  
         hour, minute = map(int, birth_time.split(':'))  
@@ -113,10 +133,8 @@ def calculate():
             })
 
         # Add White Moon Selena (if available)
-        # Swiss Ephemeris constant for White Moon is 56 or swe.WHITE_MOON
         try:
-            # Try using the constant value directly (56 = SE_WHITE_MOON)
-            selena_result = swe.calc_ut(jd, 56)
+            selena_result = swe.calc_ut(jd, 56)  # SE_WHITE_MOON = 56
             selena_lon = selena_result[0][0]
             planets.append({
                 'name': 'White Moon Selena',
@@ -132,7 +150,7 @@ def calculate():
             app.logger.warning(f"Could not calculate White Moon Selena: {e}")
 
         # Calculate houses (Placidus) - Python binding signature
-        cusps, ascmc = swe.houses(jd, latitude, longitude)  
+        cusps, ascmc = swe.houses(jd, latitude, longitude, b'P')  # Explicitly use Placidus
 
         asc_deg = normalize_degree(ascmc[0])  
         mc_deg = normalize_degree(ascmc[1])
@@ -141,6 +159,9 @@ def calculate():
         # Calculate Descendant and IC
         desc_deg = normalize_degree(asc_deg + 180)
         ic_deg = normalize_degree(mc_deg + 180)
+
+        # Log house calculation for debugging
+        app.logger.info(f"HOUSES: ASC={asc_deg:.4f}, MC={mc_deg:.4f}, Vertex={vertex_deg:.4f}")
 
         # Add Vertex to planets list
         planets.append({
@@ -155,7 +176,6 @@ def calculate():
         })
 
         # Calculate Part of Fortune
-        # Formula: Day chart = ASC + Moon - Sun, Night chart = ASC + Sun - Moon
         sun_data = next((p for p in planets if p['name'] == 'Sun'), None)
         moon_data = next((p for p in planets if p['name'] == 'Moon'), None)
         
@@ -164,23 +184,8 @@ def calculate():
             moon_lon = moon_data['fullDegree']
             
             # Determine if day or night chart
-            # Day chart: Sun is above the horizon (between ASC and DESC going through MC)
-            # Simplified: Sun is in houses 7-12 (above horizon)
-            # More accurate: check if Sun longitude is between ASC and ASC+180
-            sun_above_horizon = False
-            if asc_deg <= desc_deg:
-                sun_above_horizon = asc_deg <= sun_lon < desc_deg
-            else:
-                sun_above_horizon = sun_lon >= asc_deg or sun_lon < desc_deg
-            
-            # Actually, for day chart: Sun should be ABOVE horizon
-            # Sun is above horizon when it's in the upper half (houses 7-12)
-            # This means Sun longitude should be between DESC and ASC (going backwards)
-            # Simpler check: is Sun between IC and MC (via ASC)?
-            
-            # Simplest reliable method: check if Sun is in upper hemisphere
-            # Upper hemisphere = houses 7, 8, 9, 10, 11, 12
-            # This is when Sun is between Descendant and Ascendant (going through MC)
+            # Day chart: Sun is above horizon (between ASC and DESC via MC)
+            # Simplified: check if Sun is in upper hemisphere
             if desc_deg <= asc_deg:
                 is_day_chart = desc_deg <= sun_lon or sun_lon < asc_deg
             else:
