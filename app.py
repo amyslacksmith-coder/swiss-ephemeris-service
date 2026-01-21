@@ -43,7 +43,8 @@ PLANETS = {
     'Juno': swe.JUNO,
     'Vesta': swe.VESTA,
     'Pholus': swe.PHOLUS,
-    'Black Moon Lilith': swe.OSCU_APOG,  # True/Oscillating Lilith
+    'Black Moon Lilith': swe.MEAN_APOG,
+    'True Lilith': swe.OSCU_APOG,
 }
 
 def normalize_degree(deg):
@@ -145,8 +146,7 @@ def calculate():
         except Exception as e:
             print(f"Could not calculate White Moon Selena: {e}")
 
-        # Add Priapus (opposite Black Moon Lilith = lunar perigee)
-        # This is what many Western sites call "White Moon Selena"
+        # Add Priapus (opposite Mean Black Moon Lilith = lunar perigee)
         lilith_data = next((p for p in planets if p['name'] == 'Black Moon Lilith'), None)
         if lilith_data:
             priapus_deg = normalize_degree(lilith_data['fullDegree'] + 180.0)
@@ -158,6 +158,22 @@ def calculate():
                 'latitude': -lilith_data['latitude'],
                 'distance': lilith_data['distance'],
                 'speed': lilith_data['speed'],
+                'isRetro': False
+            })
+
+        # Add True Priapus (opposite True Lilith)
+        # This is what many Western sites call "White Moon Selena"
+        true_lilith_data = next((p for p in planets if p['name'] == 'True Lilith'), None)
+        if true_lilith_data:
+            true_priapus_deg = normalize_degree(true_lilith_data['fullDegree'] + 180.0)
+            planets.append({
+                'name': 'True Priapus',
+                'fullDegree': true_priapus_deg,
+                'degreeInSign': true_priapus_deg % 30.0,
+                'sign': get_zodiac_sign(true_priapus_deg),
+                'latitude': -true_lilith_data['latitude'],
+                'distance': true_lilith_data['distance'],
+                'speed': true_lilith_data['speed'],
                 'isRetro': False
             })
 
