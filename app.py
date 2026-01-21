@@ -16,7 +16,6 @@ print("EPHEMERIS CHECK AT STARTUP")
 print("=" * 50)
 print("Current directory:", os.getcwd())
 print("Files in current dir:", os.listdir('.'))
-print("Ephemeris path set to:", swe.get_ephe_path())
 # Check if we have the ephemeris files
 ephe_files = [f for f in os.listdir('.') if f.endswith('.se1')]
 print("Ephemeris files found:", ephe_files)
