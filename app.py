@@ -45,6 +45,7 @@ PLANETS = {
     'Pholus': swe.PHOLUS,
     'Black Moon Lilith': swe.MEAN_APOG,
     'True Lilith': swe.OSCU_APOG,
+    'Interpolated Lilith': swe.INTP_APOG,
 }
 
 def normalize_degree(deg):
@@ -174,6 +175,21 @@ def calculate():
                 'latitude': -true_lilith_data['latitude'],
                 'distance': true_lilith_data['distance'],
                 'speed': true_lilith_data['speed'],
+                'isRetro': False
+            })
+
+        # Add Interpolated Priapus (opposite Interpolated Lilith)
+        interp_lilith_data = next((p for p in planets if p['name'] == 'Interpolated Lilith'), None)
+        if interp_lilith_data:
+            interp_priapus_deg = normalize_degree(interp_lilith_data['fullDegree'] + 180.0)
+            planets.append({
+                'name': 'Interpolated Priapus',
+                'fullDegree': interp_priapus_deg,
+                'degreeInSign': interp_priapus_deg % 30.0,
+                'sign': get_zodiac_sign(interp_priapus_deg),
+                'latitude': -interp_lilith_data['latitude'],
+                'distance': interp_lilith_data['distance'],
+                'speed': interp_lilith_data['speed'],
                 'isRetro': False
             })
 
