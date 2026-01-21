@@ -1,0 +1,85 @@
+# Orbital elements of fictitious planets
+# 27 Jan. 2000
+#
+# This file is part of the Swiss Ephemeris, from Astrodienst AG.
+# License conditions: see file LICENSE.TXT.
+#
+# Warning! These planets do not exist!
+#
+# The user can add his/her own elements.
+# 960 is the maximum number of fictitious planets.
+#
+# The elements are:
+# 1. epoch of elements (Julian day)
+# 2. equinox (Julian day or "J2000" or "B1950" or "J1900" or "B1900")
+# 3. mean anomaly at epoch
+# 4. semi-axis
+# 5. eccentricity
+# 6. argument of perihelion
+# 7. ascending node
+# 8. inclination
+# 9. name of planet
+#
+# Witte/Sieggruen planets, refined by James Neely
+  J1900, J1900,  1.0,  40.99837, 0.00460, 171.4333,  129.8325, 1.0833, Cupido   # 1
+  J1900, J1900,  1.0,  50.66744, 0.00245, 148.1796,  161.3339, 1.0500, Hades    # 2
+  J1900, J1900,  1.0,  59.21436, 0.00120, 299.0440,    0.0000, 0.0000, Zeus     # 3
+  J1900, J1900,  1.0,  64.81690, 0.00305, 208.8801,    0.0000, 0.0000, Kronos   # 4
+  J1900, J1900,  1.0,  70.29949, 0.00000,   0.0000,    0.0000, 0.0000, Apollon  # 5
+  J1900, J1900,  1.0,  73.62765, 0.00000,   0.0000,    0.0000, 0.0000, Admetos  # 6
+  J1900, J1900,  1.0,  77.25568, 0.00000,   0.0000,    0.0000, 0.0000, Vulkanus # 7
+  J1900, J1900,  1.0,  83.66907, 0.00000,   0.0000,    0.0000, 0.0000, Poseidon # 8
+#
+# Isis-Transpluto; elements from "Die Sterne" 3/1952, p. 70ff.
+# Strubell does not give an equinox. 1945 is taken in order to
+# reproduce the as best as ASTdistribution PROGRAM values in ACS PC Atlas.
+  2431681.5, 2431681.5, 0.0, 77.775, 0.3, 0.7, 0, 0, Isis-Transpluto   # 9
+#
+# Nibiru, elements from sitchin.com
+  2114092.5, J2000,   0.0, 235, 0.99,  0,  0,  0, Nibiru   # 10
+#
+# Harrington, elements fromErta / Coelo 5/1987
+  2374696.5, J2000,   0.0, 101.2, 0.411, 208.5, 275.4, 32.4, Harrington    # 11
+#
+# Leverrier's Neptune elements
+  J1900, J1900,  1.32, 36.1478, 0.10761, 284.75, 0, 0, Leverrier (Neptune) # 12
+# Adams' Neptune elements
+  J1900, J1900, 52.28, 37.2555, 0.12062, 299.11, 0, 0, Adams (Neptune)     # 13
+# Lowell's Pluto elements
+  J1900, J1900,  2.23, 43.0,    0.202,   204.9,  0, 0, Lowell (Pluto)      # 14
+# Pickering's Pluto elements
+  J1900, J1900,  2.80, 55.1,    0.31,    280.1, 100, 15, Pickering (Pluto)  # 15
+#
+# Vulcan (intstramerstrialcurial hypothetical planet)
+# according to L.H.Weston
+  J1900, J1900,252.8,  0.13744, 0.019, 322.2, 47.1, 7.5, Vulcan    # 16
+#
+# Selena/White Moon
+  J2000, J2000,  0.0, 0.05279142865925, 0.0, 0.0, 0, 0, Selena/White Moon, geo # 17
+#
+# derived from:
+# Selena (geo, mean node): 
+# This is a 'hypothetical' second Moon of the Earth (or a third one, 
+# after the "Black Moon") of obscure provenance. Its distance from 
+# the Earth is more than 20 times the distance of the Moon and it 
+# moves about the Earth in 7 years. Its orbit is a perfect, unperturbed 
+# circle. Of course, the physical existence of such a body is not 
+# possible. The gravities of Sun, Earth, and Moon would strongly 
+# influence its orbit.
+# Many Russian astrologers use it. Its theoretical base is: the electromagnetic
+# field of the Earth has a second focus which coincides with the "White Moon".
+# 
+# The "geo" tag indicates that this is a geocentric body.
+# The orbital period is about 2550 days = 6.983 years.
+# The mean daily motion is 360/2550 = 0.141176... degrees
+# The semi-axis is calculated from Kepler's third law:
+#    a^3 = G * M * T^2 / (4 * pi^2)
+# where M is the mass of Earth and T the orbital period.
+# The result is a = 0.05279... AU (with the Moon at 0.00257 AU from Earth).
+#
+# Waldemath's second Earth satellite (a completely fictional body)
+  J1920, J1920, 0.0, 0.0068, 0.0, 0.0, 0, 0, Waldemath, geo # 18
+#
+# Proserpina. There are at least 3 ephemerides:
+# (1) Proserpina L.H. Weston (this is NOT the asteroid 26 Proserpina!)
+  J1900, J1900, 354.75, 77.775, 0.0, 0.0,  0.0,  0.0, Proserpina  # 19
