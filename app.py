@@ -34,8 +34,8 @@ PLANETS = {
     'Neptune': swe.NEPTUNE,
     'Pluto': swe.PLUTO,
     'Chiron': swe.CHIRON,
-    'True North Node': swe.TRUE_NODE,    # Oscillating/True Node (Vedic: Rahu)
-    'Mean North Node': swe.MEAN_NODE,    # Averaged/Mean Node
+    'True North Node': swe.TRUE_NODE,
+    'Mean North Node': swe.MEAN_NODE,
     'Ceres': swe.CERES,
     'Pallas': swe.PALLAS,
     'Juno': swe.JUNO,
@@ -106,7 +106,6 @@ POLARITIES = {
     'Scorpio': 'Negative', 'Capricorn': 'Negative', 'Pisces': 'Negative'
 }
 
-# Planetary dignities
 DIGNITIES = {
     'Sun': {'domicile': ['Leo'], 'exaltation': ['Aries'], 'detriment': ['Aquarius'], 'fall': ['Libra']},
     'Moon': {'domicile': ['Cancer'], 'exaltation': ['Taurus'], 'detriment': ['Capricorn'], 'fall': ['Scorpio']},
@@ -120,14 +119,12 @@ DIGNITIES = {
     'Pluto': {'domicile': ['Scorpio'], 'exaltation': ['Aries'], 'detriment': ['Taurus'], 'fall': ['Libra']}
 }
 
-# Sign rulers for dispositor chain
 SIGN_RULERS = {
     'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
     'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
     'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
 }
 
-# Triplicity rulers (Dorothean system - most commonly used)
 TRIPLICITY_RULERS = {
     'Fire': {'day': 'Sun', 'night': 'Jupiter', 'participating': 'Saturn'},
     'Earth': {'day': 'Venus', 'night': 'Moon', 'participating': 'Mars'},
@@ -135,12 +132,10 @@ TRIPLICITY_RULERS = {
     'Water': {'day': 'Venus', 'night': 'Mars', 'participating': 'Moon'}
 }
 
-# Combustion orbs
-COMBUSTION_ORB = 8.5  # Standard combustion orb
-CAZIMI_ORB = 0.2833  # 17 arcminutes = cazimi (in the heart of the Sun)
-UNDER_BEAMS_ORB = 17  # Under the Sun's beams
+COMBUSTION_ORB = 8.5
+CAZIMI_ORB = 0.2833
+UNDER_BEAMS_ORB = 17
 
-# Fixed stars (longitude as of J2000, with ~50" annual precession)
 FIXED_STARS = {
     'Algol': {'longitude': 56.17, 'nature': 'Saturn/Jupiter', 'meaning': 'Intense, passionate, misfortune if afflicted'},
     'Alcyone': {'longitude': 60.0, 'nature': 'Moon/Mars', 'meaning': 'Ambition, honor, eminence'},
@@ -167,7 +162,6 @@ FIXED_STARS = {
     'Scheat': {'longitude': 349.37, 'nature': 'Mars/Mercury', 'meaning': 'Misfortune, drowning, extreme sensitivity'}
 }
 
-# Arabic Parts formulas (Day formula, Night formula - some reverse)
 ARABIC_PARTS = {
     'Part of Fortune': {'day': 'ASC + Moon - Sun', 'night': 'ASC + Sun - Moon'},
     'Part of Spirit': {'day': 'ASC + Sun - Moon', 'night': 'ASC + Moon - Sun'},
@@ -187,15 +181,18 @@ ARABIC_PARTS = {
     'Part of Hidden Enemies': {'formula': 'ASC + 12th cusp - ruler of 12th'}
 }
 
+
 def normalize_degree(deg):
     deg = deg % 360.0
     if deg < 0:
         deg += 360.0
     return deg
 
+
 def get_zodiac_sign(degree):
     index = int(normalize_degree(degree) / 30)
     return SIGNS[index]
+
 
 def get_sign_data(sign):
     return {
@@ -204,11 +201,12 @@ def get_sign_data(sign):
         'polarity': POLARITIES.get(sign)
     }
 
+
 def is_light(planet_name):
     return planet_name in ['Sun', 'Moon']
 
+
 def get_dignity(planet_name, sign):
-    """Get essential dignity of planet in sign"""
     if planet_name not in DIGNITIES:
         return None
     
@@ -225,8 +223,8 @@ def get_dignity(planet_name, sign):
     else:
         return {'type': 'peregrine', 'strength': 0, 'description': 'Planet has no essential dignity'}
 
+
 def get_triplicity(degree, is_day_chart):
-    """Get triplicity ruler based on element and sect (day/night)"""
     sign = get_zodiac_sign(degree)
     element = ELEMENTS.get(sign)
     
@@ -244,27 +242,25 @@ def get_triplicity(degree, is_day_chart):
         'is_day_chart': is_day_chart
     }
 
+
 def get_decan(degree):
-    """Get decan (10° subdivision) and its ruler"""
     degree_in_sign = degree % 30
     decan_num = int(degree_in_sign / 10) + 1
-    
     sign_index = int(degree / 30)
     
-    # Chaldean decan rulers (traditional)
     decan_rulers = [
-        ['Mars', 'Sun', 'Venus'],      # Aries
-        ['Mercury', 'Moon', 'Saturn'], # Taurus
-        ['Jupiter', 'Mars', 'Sun'],    # Gemini
-        ['Venus', 'Mercury', 'Moon'],  # Cancer
-        ['Saturn', 'Jupiter', 'Mars'], # Leo
-        ['Sun', 'Venus', 'Mercury'],   # Virgo
-        ['Moon', 'Saturn', 'Jupiter'], # Libra
-        ['Mars', 'Sun', 'Venus'],      # Scorpio
-        ['Mercury', 'Moon', 'Saturn'], # Sagittarius
-        ['Jupiter', 'Mars', 'Sun'],    # Capricorn
-        ['Venus', 'Mercury', 'Moon'],  # Aquarius
-        ['Saturn', 'Jupiter', 'Mars']  # Pisces
+        ['Mars', 'Sun', 'Venus'],
+        ['Mercury', 'Moon', 'Saturn'],
+        ['Jupiter', 'Mars', 'Sun'],
+        ['Venus', 'Mercury', 'Moon'],
+        ['Saturn', 'Jupiter', 'Mars'],
+        ['Sun', 'Venus', 'Mercury'],
+        ['Moon', 'Saturn', 'Jupiter'],
+        ['Mars', 'Sun', 'Venus'],
+        ['Mercury', 'Moon', 'Saturn'],
+        ['Jupiter', 'Mars', 'Sun'],
+        ['Venus', 'Mercury', 'Moon'],
+        ['Saturn', 'Jupiter', 'Mars']
     ]
     
     return {
@@ -273,36 +269,23 @@ def get_decan(degree):
         'degree_range': f"{(decan_num-1)*10}°-{decan_num*10}°"
     }
 
+
 def get_term(degree):
-    """Get Egyptian term/bound and its ruler"""
     degree_in_sign = degree % 30
     sign_index = int(degree / 30)
     
-    # Egyptian terms (Ptolemaic)
     terms = [
-        # Aries
         [(0, 6, 'Jupiter'), (6, 12, 'Venus'), (12, 20, 'Mercury'), (20, 25, 'Mars'), (25, 30, 'Saturn')],
-        # Taurus
         [(0, 8, 'Venus'), (8, 14, 'Mercury'), (14, 22, 'Jupiter'), (22, 27, 'Saturn'), (27, 30, 'Mars')],
-        # Gemini
         [(0, 6, 'Mercury'), (6, 12, 'Jupiter'), (12, 17, 'Venus'), (17, 24, 'Mars'), (24, 30, 'Saturn')],
-        # Cancer
         [(0, 7, 'Mars'), (7, 13, 'Venus'), (13, 19, 'Mercury'), (19, 26, 'Jupiter'), (26, 30, 'Saturn')],
-        # Leo
         [(0, 6, 'Jupiter'), (6, 11, 'Venus'), (11, 18, 'Saturn'), (18, 24, 'Mercury'), (24, 30, 'Mars')],
-        # Virgo
         [(0, 7, 'Mercury'), (7, 17, 'Venus'), (17, 21, 'Jupiter'), (21, 28, 'Mars'), (28, 30, 'Saturn')],
-        # Libra
         [(0, 6, 'Saturn'), (6, 14, 'Mercury'), (14, 21, 'Jupiter'), (21, 28, 'Venus'), (28, 30, 'Mars')],
-        # Scorpio
         [(0, 7, 'Mars'), (7, 11, 'Venus'), (11, 19, 'Mercury'), (19, 24, 'Jupiter'), (24, 30, 'Saturn')],
-        # Sagittarius
         [(0, 12, 'Jupiter'), (12, 17, 'Venus'), (17, 21, 'Mercury'), (21, 26, 'Saturn'), (26, 30, 'Mars')],
-        # Capricorn
         [(0, 7, 'Mercury'), (7, 14, 'Jupiter'), (14, 22, 'Venus'), (22, 26, 'Saturn'), (26, 30, 'Mars')],
-        # Aquarius
         [(0, 7, 'Mercury'), (7, 13, 'Venus'), (13, 20, 'Jupiter'), (20, 25, 'Mars'), (25, 30, 'Saturn')],
-        # Pisces
         [(0, 12, 'Venus'), (12, 16, 'Jupiter'), (16, 19, 'Mercury'), (19, 28, 'Mars'), (28, 30, 'Saturn')]
     ]
     
@@ -315,8 +298,8 @@ def get_term(degree):
     
     return None
 
+
 def check_combustion(planet_name, planet_degree, sun_degree):
-    """Check if planet is combust, cazimi, or under the beams"""
     if planet_name == 'Sun':
         return None
     
@@ -345,8 +328,8 @@ def check_combustion(planet_name, planet_degree, sun_degree):
     
     return None
 
+
 def calculate_sect(is_day_chart):
-    """Calculate sect (day/night) dignities for planets"""
     return {
         'is_day_chart': is_day_chart,
         'sect_light': 'Sun' if is_day_chart else 'Moon',
@@ -367,8 +350,8 @@ def calculate_sect(is_day_chart):
         'description': 'Day chart - Sun sect rules' if is_day_chart else 'Night chart - Moon sect rules'
     }
 
+
 def get_planet_sect_status(planet_name, is_day_chart):
-    """Get whether a planet is in sect or out of sect"""
     day_sect_planets = ['Sun', 'Jupiter', 'Saturn']
     night_sect_planets = ['Moon', 'Venus', 'Mars']
     
@@ -385,22 +368,19 @@ def get_planet_sect_status(planet_name, is_day_chart):
         'description': 'In sect - operates more constructively' if in_sect else 'Out of sect - operates more problematically'
     }
 
+
 def find_mutual_receptions(planets):
-    """Find mutual receptions (two planets in each other's signs)"""
     receptions = []
     
-    # Get planets with their signs
     planet_signs = {}
     for p in planets:
         if p['name'] in SIGN_RULERS.values():
             planet_signs[p['name']] = p['sign']
     
-    # Check for mutual receptions
     checked = set()
     for p1_name, p1_sign in planet_signs.items():
         for p2_name, p2_sign in planet_signs.items():
             if p1_name != p2_name and (p2_name, p1_name) not in checked:
-                # Check if p1 is in p2's sign AND p2 is in p1's sign
                 p1_rules = [s for s, r in SIGN_RULERS.items() if r == p1_name]
                 p2_rules = [s for s, r in SIGN_RULERS.items() if r == p2_name]
                 
@@ -417,15 +397,13 @@ def find_mutual_receptions(planets):
     
     return receptions
 
+
 def calculate_dispositor_chain(planets):
-    """Calculate dispositor chain and find final dispositor"""
-    # Build planet -> sign mapping
     planet_signs = {}
     for p in planets:
         if p['name'] in ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']:
             planet_signs[p['name']] = p['sign']
     
-    # Build dispositor chain
     chain = {}
     for planet, sign in planet_signs.items():
         ruler = SIGN_RULERS.get(sign)
@@ -435,16 +413,13 @@ def calculate_dispositor_chain(planets):
             'in_own_sign': ruler == planet
         }
     
-    # Find final dispositor (planet that rules its own sign, or mutual reception loop)
     final_dispositor = None
     for planet, data in chain.items():
         if data['in_own_sign']:
             final_dispositor = planet
             break
     
-    # If no planet in own sign, check for mutual reception as final
     if not final_dispositor:
-        # Follow chain to find loop
         for start_planet in chain:
             visited = set()
             current = start_planet
@@ -455,7 +430,6 @@ def calculate_dispositor_chain(planets):
                 current = chain.get(current, {}).get('dispositor')
             
             if current in visited:
-                # Found a loop
                 loop_start = path.index(current)
                 loop = path[loop_start:]
                 if len(loop) == 2:
@@ -470,31 +444,26 @@ def calculate_dispositor_chain(planets):
         'has_final_dispositor': final_dispositor is not None and 'loop' not in str(final_dispositor).lower()
     }
 
+
 def calculate_void_of_course_moon(moon_data, planets, aspects):
-    """Calculate if Moon is void of course (no more aspects before leaving sign)"""
     moon_deg = moon_data['fullDegree']
     moon_sign = moon_data['sign']
-    moon_speed = moon_data.get('speed', 12)  # Average moon speed ~12°/day
+    moon_speed = moon_data.get('speed', 12)
     
-    # Find degree where Moon leaves current sign
     sign_index = SIGNS.index(moon_sign)
     sign_end = (sign_index + 1) * 30
     degrees_to_sign_end = sign_end - moon_deg
     
-    # Get all applying aspects the Moon will make
     applying_aspects = []
     for asp in aspects:
         if asp['planet1'] == 'Moon' or asp['planet2'] == 'Moon':
             if asp.get('is_applying', False):
                 other_planet = asp['planet2'] if asp['planet1'] == 'Moon' else asp['planet1']
-                # Only count traditional planets for VOC
                 if other_planet in ['Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']:
                     applying_aspects.append(asp)
     
-    # Check if any applying aspects complete before Moon leaves sign
     will_perfect_aspect = False
     for asp in applying_aspects:
-        # Rough check: if orb is less than degrees to sign end, aspect will perfect
         if asp['orb'] < degrees_to_sign_end:
             will_perfect_aspect = True
             break
@@ -510,8 +479,8 @@ def calculate_void_of_course_moon(moon_data, planets, aspects):
         'description': 'Moon void of course - actions may not manifest as intended' if is_void else 'Moon applying to aspects - normal functionality'
     }
 
+
 def check_fixed_star_conjunctions(planets, orb=1.5):
-    """Check for fixed star conjunctions"""
     conjunctions = []
     
     for planet in planets:
@@ -534,6 +503,7 @@ def check_fixed_star_conjunctions(planets, orb=1.5):
                     })
     
     return conjunctions
+
 
 def calculate_aspect(planet1, planet2):
     deg1 = planet1['fullDegree']
@@ -578,7 +548,6 @@ def calculate_aspect(planet1, planet2):
                     (raw_diff < 0 and relative_speed > 0)
                 )
             
-            # Check if out of sign (dissociate)
             sign1 = get_zodiac_sign(deg1)
             sign2 = get_zodiac_sign(deg2)
             expected_sign_diff = target_angle / 30
@@ -602,8 +571,8 @@ def calculate_aspect(planet1, planet2):
     
     return None
 
+
 def calculate_declination_aspects(planets):
-    """Calculate parallel and contraparallel aspects based on declination"""
     aspects = []
     aspect_bodies = [p for p in planets if p['name'] in ASPECT_PLANETS and 'latitude' in p]
     
@@ -612,13 +581,11 @@ def calculate_declination_aspects(planets):
             p1 = aspect_bodies[i]
             p2 = aspect_bodies[j]
             
-            # Using latitude as proxy for declination (proper declination requires more calc)
             dec1 = p1.get('latitude', 0)
             dec2 = p2.get('latitude', 0)
             
             diff = abs(dec1 - dec2)
             
-            # Parallel - same declination
             if diff < 1.0:
                 aspects.append({
                     'planet1': p1['name'],
@@ -631,9 +598,8 @@ def calculate_declination_aspects(planets):
                     'declination2': round(dec2, 2)
                 })
             
-            # Contraparallel - opposite declination
             sum_dec = abs(dec1 + dec2)
-            if sum_dec < 1.0 and (dec1 * dec2 < 0):  # Different signs
+            if sum_dec < 1.0 and (dec1 * dec2 < 0):
                 aspects.append({
                     'planet1': p1['name'],
                     'planet2': p2['name'],
@@ -646,6 +612,7 @@ def calculate_declination_aspects(planets):
                 })
     
     return aspects
+
 
 def calculate_all_aspects(planets, include_angles=False, asc_deg=None, mc_deg=None):
     aspects = []
@@ -674,10 +641,10 @@ def calculate_all_aspects(planets, include_angles=False, asc_deg=None, mc_deg=No
     
     return aspects
 
+
 def detect_aspect_patterns(aspects, planets):
     patterns = []
     
-    # Build adjacency lists
     conjunctions = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'conjunction']
     trines = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'trine']
     squares = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'square']
@@ -686,17 +653,14 @@ def detect_aspect_patterns(aspects, planets):
     quincunxes = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'quincunx']
     quintiles = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'quintile']
     biquintiles = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'biquintile']
+    sesquiquadrates = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'sesquiquadrate']
     
     def has_aspect(p1, p2, aspect_list):
         return (p1, p2) in aspect_list or (p2, p1) in aspect_list
     
-    all_planets_in_aspects = set()
-    for a in aspects:
-        all_planets_in_aspects.add(a['planet1'])
-        all_planets_in_aspects.add(a['planet2'])
-    
-    # STELLIUM: 3+ planets conjunct within 8 degrees
     planet_positions = {p['name']: p['fullDegree'] for p in planets if p['name'] in ASPECT_PLANETS}
+    
+    # STELLIUM
     for p1 in planet_positions:
         cluster = [p1]
         for p2 in planet_positions:
@@ -714,7 +678,7 @@ def detect_aspect_patterns(aspects, planets):
             if pattern not in patterns:
                 patterns.append(pattern)
     
-    # GRAND TRINE: 3 planets all trine each other
+    # GRAND TRINE
     all_trine_planets = set()
     for t in trines:
         all_trine_planets.add(t[0])
@@ -725,7 +689,6 @@ def detect_aspect_patterns(aspects, planets):
             for p3 in all_trine_planets:
                 if p1 < p2 < p3:
                     if has_aspect(p1, p2, trines) and has_aspect(p2, p3, trines) and has_aspect(p1, p3, trines):
-                        # Determine element
                         signs = []
                         for p in [p1, p2, p3]:
                             if p in planet_positions:
@@ -740,7 +703,7 @@ def detect_aspect_patterns(aspects, planets):
                             'description': f'{element} Grand Trine - natural talent and flow'
                         })
     
-    # T-SQUARE: 2 planets in opposition, both square a third
+    # T-SQUARE
     for opp in oppositions:
         p1, p2 = opp
         for sq in squares:
@@ -750,7 +713,6 @@ def detect_aspect_patterns(aspects, planets):
             if sq_planet and sq_planet != p2:
                 if has_aspect(p2, sq_planet, squares):
                     pattern_planets = sorted([p1, p2, sq_planet])
-                    # Determine modality of apex
                     apex_sign = get_zodiac_sign(planet_positions.get(sq_planet, 0)) if sq_planet in planet_positions else None
                     modality = MODALITIES.get(apex_sign) if apex_sign else None
                     
@@ -764,7 +726,7 @@ def detect_aspect_patterns(aspects, planets):
                     if pattern not in patterns:
                         patterns.append(pattern)
     
-    # GRAND CROSS: 4 planets, 2 oppositions, all square each other
+    # GRAND CROSS
     if len(oppositions) >= 2:
         for i, opp1 in enumerate(oppositions):
             for opp2 in oppositions[i+1:]:
@@ -778,8 +740,8 @@ def detect_aspect_patterns(aspects, planets):
                         'description': 'Maximum tension - powerful drive for achievement through obstacles'
                     })
     
-    # YOD (Finger of God): 2 planets sextile, both quincunx a third
-    yod_patterns = []  # Store Yods for Golden Yod detection
+    # YOD
+    yod_patterns = []
     for sx in sextiles:
         p1, p2 = sx
         for qx in quincunxes:
@@ -799,31 +761,26 @@ def detect_aspect_patterns(aspects, planets):
                         patterns.append(yod_data)
                         yod_patterns.append(yod_data)
     
-    # GOLDEN YOD (Golden Triangle): Yod + quintile or biquintile between any two planets
-    # The Golden Yod adds a "golden ratio" aspect (quintile 72° or biquintile 144°) to the Yod
+    # GOLDEN YOD
     for yod in yod_patterns:
         apex = yod['apex']
         base1, base2 = yod['base_planets'][0], yod['base_planets'][1]
         
-        # Check for quintile/biquintile connections
         golden_aspect = None
         golden_planets = None
         
-        # Check apex to base1
         if has_aspect(apex, base1, quintiles):
             golden_aspect = 'quintile'
             golden_planets = (apex, base1)
         elif has_aspect(apex, base1, biquintiles):
             golden_aspect = 'biquintile'
             golden_planets = (apex, base1)
-        # Check apex to base2
         elif has_aspect(apex, base2, quintiles):
             golden_aspect = 'quintile'
             golden_planets = (apex, base2)
         elif has_aspect(apex, base2, biquintiles):
             golden_aspect = 'biquintile'
             golden_planets = (apex, base2)
-        # Check base1 to base2 (in addition to sextile)
         elif has_aspect(base1, base2, quintiles):
             golden_aspect = 'quintile'
             golden_planets = (base1, base2)
@@ -842,7 +799,7 @@ def detect_aspect_patterns(aspects, planets):
                 'description': f'Golden Yod - Yod enhanced by {golden_aspect} ({golden_planets[0]}-{golden_planets[1]}), combining fate with creative/spiritual gifts'
             })
     
-    # KITE: Grand Trine + one planet opposite one of the trine planets (forming sextiles to the other two)
+    # KITE
     for gt in [p for p in patterns if p['pattern'] == 'Grand Trine']:
         gt_planets = gt['planets']
         for opp in oppositions:
@@ -866,13 +823,12 @@ def detect_aspect_patterns(aspects, planets):
                         'description': f'Grand Trine with outlet - {kite_point} channels the trine energy productively'
                     })
     
-    # MYSTIC RECTANGLE: 2 oppositions + 2 trines + 2 sextiles
+    # MYSTIC RECTANGLE
     if len(oppositions) >= 2 and len(trines) >= 2 and len(sextiles) >= 2:
         for i, opp1 in enumerate(oppositions):
             for opp2 in oppositions[i+1:]:
                 p1, p2 = opp1
                 p3, p4 = opp2
-                # Check for trines and sextiles forming rectangle
                 if ((has_aspect(p1, p3, trines) and has_aspect(p2, p4, trines) and 
                      has_aspect(p1, p4, sextiles) and has_aspect(p2, p3, sextiles)) or
                     (has_aspect(p1, p4, trines) and has_aspect(p2, p3, trines) and 
@@ -883,22 +839,12 @@ def detect_aspect_patterns(aspects, planets):
                         'description': 'Balanced tension with creative outlets - practical mysticism'
                     })
     
-    # GRAND SEXTILE (Star of David): 6 planets, alternating trines and sextiles
-    # Very rare - two interlocking Grand Trines
-    all_sextile_planets = set()
-    for s in sextiles:
-        all_sextile_planets.add(s[0])
-        all_sextile_planets.add(s[1])
-    
-    # CRADLE: 2 planets in opposition, each forms sextile/trine to 2 other planets
+    # CRADLE
     for opp in oppositions:
         p1, p2 = opp
         p1_sextiles = [s[1] if s[0] == p1 else s[0] for s in sextiles if p1 in s]
         p2_sextiles = [s[1] if s[0] == p2 else s[0] for s in sextiles if p2 in s]
-        p1_trines = [t[1] if t[0] == p1 else t[0] for t in trines if p1 in t]
-        p2_trines = [t[1] if t[0] == p2 else t[0] for t in trines if p2 in t]
         
-        # Find planets that complete the cradle
         for sx1 in p1_sextiles:
             for sx2 in p2_sextiles:
                 if sx1 != sx2 and has_aspect(sx1, sx2, sextiles):
@@ -908,8 +854,7 @@ def detect_aspect_patterns(aspects, planets):
                         'description': 'Supportive container for opposition energy - creative resolution'
                     })
     
-    # THOR'S HAMMER (Quadriform): 2 planets square, both sesquiquadrate a third
-    sesquiquadrates = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'sesquiquadrate']
+    # THOR'S HAMMER
     for sq in squares:
         p1, p2 = sq
         for ss in sesquiquadrates:
@@ -925,7 +870,7 @@ def detect_aspect_patterns(aspects, planets):
                         'description': f'Intense drive for action - {hammer_point} is the striking point'
                     })
     
-    # BOOMERANG: Yod + opposition to apex
+    # BOOMERANG
     for yod in [p for p in patterns if p['pattern'] == 'Yod']:
         apex = yod['apex']
         for opp in oppositions:
@@ -941,14 +886,13 @@ def detect_aspect_patterns(aspects, planets):
     
     return patterns
 
+
 def calculate_chart_shape(planets):
-    """Determine overall chart shape (Bundle, Bowl, Bucket, Locomotive, Splay, Splash, Seesaw)"""
     positions = sorted([p['fullDegree'] for p in planets if p['name'] in ASPECT_PLANETS[:10]])
     
     if len(positions) < 7:
         return None
     
-    # Calculate gaps between consecutive planets
     gaps = []
     for i in range(len(positions)):
         next_i = (i + 1) % len(positions)
@@ -960,7 +904,6 @@ def calculate_chart_shape(planets):
     max_gap = max(gaps)
     spread = 360 - max_gap
     
-    # Determine shape
     if spread <= 120:
         shape = 'Bundle'
         description = 'All planets within 120° - concentrated focus, specialist'
@@ -968,11 +911,9 @@ def calculate_chart_shape(planets):
         shape = 'Bowl'
         description = 'All planets within 180° - self-contained, mission-oriented'
     elif max_gap >= 120:
-        # Check for bucket (bowl with one handle planet)
         shape = 'Locomotive'
         description = 'Empty trine (120°) - driven, purposeful, strong momentum'
     else:
-        # Count planets in each quadrant
         quadrants = [0, 0, 0, 0]
         for pos in positions:
             q = int(pos / 90)
@@ -992,8 +933,8 @@ def calculate_chart_shape(planets):
         'largest_gap': round(max_gap, 1)
     }
 
+
 def calculate_element_balance(planets):
-    """Calculate elemental balance of chart"""
     counts = {'Fire': 0, 'Earth': 0, 'Air': 0, 'Water': 0}
     weights = {'Sun': 2, 'Moon': 2, 'Mercury': 1, 'Venus': 1, 'Mars': 1, 
                'Jupiter': 1, 'Saturn': 1, 'Ascendant': 2, 'Midheaven': 1}
@@ -1017,8 +958,8 @@ def calculate_element_balance(planets):
         'lacking': lacking if counts[lacking] == 0 else None
     }
 
+
 def calculate_modality_balance(planets):
-    """Calculate modality balance of chart"""
     counts = {'Cardinal': 0, 'Fixed': 0, 'Mutable': 0}
     weights = {'Sun': 2, 'Moon': 2, 'Mercury': 1, 'Venus': 1, 'Mars': 1,
                'Jupiter': 1, 'Saturn': 1, 'Ascendant': 2, 'Midheaven': 1}
@@ -1040,8 +981,8 @@ def calculate_modality_balance(planets):
         'dominant': dominant
     }
 
+
 def calculate_polarity_balance(planets):
-    """Calculate polarity (yin/yang) balance"""
     counts = {'Positive': 0, 'Negative': 0}
     weights = {'Sun': 2, 'Moon': 2, 'Mercury': 1, 'Venus': 1, 'Mars': 1,
                'Jupiter': 1, 'Saturn': 1, 'Ascendant': 2, 'Midheaven': 1}
@@ -1061,27 +1002,25 @@ def calculate_polarity_balance(planets):
         'dominant': 'Positive (Yang/Masculine)' if counts['Positive'] > counts['Negative'] else 'Negative (Yin/Feminine)'
     }
 
+
 def calculate_hemisphere_emphasis(planets, asc_deg, mc_deg):
-    """Calculate hemisphere emphasis"""
     emphasis = {
-        'eastern': 0,  # Houses 10-3 (self-oriented)
-        'western': 0,  # Houses 4-9 (other-oriented)
-        'northern': 0, # Houses 1-6 (private)
-        'southern': 0  # Houses 7-12 (public)
+        'eastern': 0,
+        'western': 0,
+        'northern': 0,
+        'southern': 0
     }
     
     for planet in planets:
         if planet['name'] in ASPECT_PLANETS[:10]:
             lon = planet['fullDegree']
             
-            # East/West (relative to Ascendant)
             rel_to_asc = normalize_degree(lon - asc_deg)
             if rel_to_asc < 180:
                 emphasis['western'] += 1
             else:
                 emphasis['eastern'] += 1
             
-            # North/South (relative to MC)
             rel_to_mc = normalize_degree(lon - mc_deg)
             if rel_to_mc < 180:
                 emphasis['northern'] += 1
@@ -1103,6 +1042,7 @@ def calculate_hemisphere_emphasis(planets, asc_deg, mc_deg):
         'counts': emphasis,
         'interpretations': interpretations
     }
+
 
 @app.route('/', methods=['GET'])
 def home():
@@ -1150,6 +1090,7 @@ def home():
         "ephemeris_files": [f for f in os.listdir('.') if f.endswith('.se1')]
     })
 
+
 @app.route('/calculate', methods=['POST'])
 def calculate():
     try:
@@ -1165,7 +1106,7 @@ def calculate():
         include_fixed_stars = data.get('includeFixedStars', True)
         include_dignities = data.get('includeDignities', True)
         include_analysis = data.get('includeAnalysis', True)
-        node_type = data.get('nodeType', 'true')  # 'true', 'mean', or 'both'
+        node_type = data.get('nodeType', 'true')
         
         if house_system not in HOUSE_SYSTEMS:
             house_system = 'P'
@@ -1181,7 +1122,6 @@ def calculate():
 
         planets = []
         for name, planet_id in PLANETS.items():
-            # Handle node type selection
             if node_type == 'true' and name == 'Mean North Node':
                 continue
             if node_type == 'mean' and name == 'True North Node':
@@ -1197,7 +1137,6 @@ def calculate():
                 sign = get_zodiac_sign(longitude_deg)
                 full_degree = normalize_degree(longitude_deg)
                 
-                # Normalize node names for output (remove True/Mean prefix when only one is selected)
                 display_name = name
                 if name == 'True North Node' and node_type == 'true':
                     display_name = 'North Node'
@@ -1216,7 +1155,6 @@ def calculate():
                     'isRetro': speed < 0
                 }
                 
-                # Add node type indicator when both are included
                 if name in ['True North Node', 'Mean North Node']:
                     planet_data['nodeType'] = 'true' if name == 'True North Node' else 'mean'
                     planet_data['vedicName'] = 'Rahu'
@@ -1225,11 +1163,9 @@ def calculate():
             except Exception as e:
                 print(f"Could not calculate {name}: {e}")
 
-        # Calculate is_day_chart early (needed for triplicity and sect)
         sun_data = next((p for p in planets if p['name'] == 'Sun'), None)
         moon_data = next((p for p in planets if p['name'] == 'Moon'), None)
         
-        # Houses (calculate early for day/night determination)
         houses_result = swe.houses_ex(jd, latitude, longitude, house_system.encode())
         cusps = houses_result[0]
         ascmc = houses_result[1]
@@ -1242,7 +1178,6 @@ def calculate():
         desc_deg = normalize_degree(asc_deg + 180)
         ic_deg = normalize_degree(mc_deg + 180)
 
-        # Determine day/night chart
         is_day_chart = False
         if sun_data:
             sun_lon = sun_data['fullDegree']
@@ -1251,7 +1186,6 @@ def calculate():
 
         print(f"HOUSES ({HOUSE_SYSTEMS[house_system]}): ASC={asc_deg:.4f}, MC={mc_deg:.4f}, isDayChart={is_day_chart}")
 
-        # Now add dignities with triplicity (needs is_day_chart)
         for planet_data in planets:
             name = planet_data['name']
             sign = planet_data['sign']
@@ -1263,25 +1197,21 @@ def calculate():
                 planet_data['decan'] = get_decan(full_degree)
                 planet_data['term'] = get_term(full_degree)
                 
-                # Add combustion check
                 if sun_data and name != 'Sun':
                     combustion = check_combustion(name, full_degree, sun_data['fullDegree'])
                     if combustion:
                         planet_data['combustion'] = combustion
                 
-                # Add sect status
                 sect_status = get_planet_sect_status(name, is_day_chart)
                 if sect_status:
                     planet_data['sect'] = sect_status
 
-        # South Node(s) - calculate for each North Node present
         for north_node_name in ['North Node', 'True North Node', 'Mean North Node']:
             north_node = next((p for p in planets if p['name'] == north_node_name), None)
             if north_node:
                 south_node_deg = normalize_degree(north_node['fullDegree'] + 180.0)
                 south_sign = get_zodiac_sign(south_node_deg)
                 
-                # Determine South Node name based on North Node name
                 if north_node_name == 'North Node':
                     south_name = 'South Node'
                 elif north_node_name == 'True North Node':
@@ -1302,13 +1232,11 @@ def calculate():
                     'vedicName': 'Ketu'
                 }
                 
-                # Add node type indicator when both are included
                 if north_node_name in ['True North Node', 'Mean North Node']:
                     south_node_data['nodeType'] = north_node.get('nodeType')
                 
                 planets.append(south_node_data)
 
-        # Lilith variants
         mean_lilith = next((p for p in planets if p['name'] == 'Mean Lilith'), None)
         if mean_lilith:
             planets.append({
@@ -1379,7 +1307,6 @@ def calculate():
         except Exception as e:
             print(f"Could not calculate Selena h56: {e}")
 
-        # Add angles to planets for aspect calculation
         asc_sign = get_zodiac_sign(asc_deg)
         mc_sign = get_zodiac_sign(mc_deg)
         
@@ -1394,7 +1321,6 @@ def calculate():
             'isRetro': False
         })
 
-        # Part of Fortune
         if sun_data and moon_data:
             sun_lon = sun_data['fullDegree']
             moon_lon = moon_data['fullDegree']
@@ -1416,7 +1342,6 @@ def calculate():
                 'is_day_chart': is_day_chart
             })
             
-            # Part of Spirit (opposite formula)
             if is_day_chart:
                 pos_deg = normalize_degree(asc_deg + sun_lon - moon_lon)
             else:
@@ -1478,7 +1403,6 @@ def calculate():
                 'signData': get_sign_data(cusp_sign)
             })
 
-        # Calculate aspects
         aspects = []
         declination_aspects = []
         patterns = []
@@ -1492,33 +1416,26 @@ def calculate():
                 patterns = detect_aspect_patterns(aspects, planets)
                 print(f"PATTERNS: Found {len(patterns)} patterns")
 
-        # Fixed star conjunctions
         fixed_star_conjunctions = []
         if include_fixed_stars:
             fixed_star_conjunctions = check_fixed_star_conjunctions(planets)
             print(f"FIXED STARS: Found {len(fixed_star_conjunctions)} conjunctions")
 
-        # Calculate sect analysis
         sect_analysis = calculate_sect(is_day_chart)
         
-        # Calculate mutual receptions
         mutual_receptions = find_mutual_receptions(planets)
         print(f"MUTUAL RECEPTIONS: Found {len(mutual_receptions)}")
         
-        # Calculate dispositor chain
         dispositor_chain = calculate_dispositor_chain(planets)
         print(f"DISPOSITOR: Final = {dispositor_chain['final_dispositor']}")
         
-        # Calculate void of course moon
         void_of_course = None
         if moon_data and aspects:
             void_of_course = calculate_void_of_course_moon(moon_data, planets, aspects)
             print(f"VOC MOON: {void_of_course['is_void_of_course']}")
 
-        # Chart analysis
         analysis = {}
         if include_analysis:
-            # Add Ascendant to planets for analysis
             planets_for_analysis = planets + [{'name': 'Ascendant', 'sign': asc_sign, 'fullDegree': asc_deg}]
             planets_for_analysis.append({'name': 'Midheaven', 'sign': mc_sign, 'fullDegree': mc_deg})
             
@@ -1563,6 +1480,7 @@ def calculate():
             'message': 'Calculation failed',
             'traceback': traceback.format_exc()
         }), 500
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
