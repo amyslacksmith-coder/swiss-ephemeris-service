@@ -34,7 +34,8 @@ PLANETS = {
     'Neptune': swe.NEPTUNE,
     'Pluto': swe.PLUTO,
     'Chiron': swe.CHIRON,
-    'North Node': swe.TRUE_NODE,
+    'True North Node': swe.TRUE_NODE,    # Oscillating/True Node (Vedic: Rahu)
+    'Mean North Node': swe.MEAN_NODE,    # Averaged/Mean Node
     'Ceres': swe.CERES,
     'Pallas': swe.PALLAS,
     'Juno': swe.JUNO,
@@ -1107,7 +1108,7 @@ def calculate_hemisphere_emphasis(planets, asc_deg, mc_deg):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "4.0 Ultimate",
+        "version": "4.1 Ultimate",
         "endpoints": {
             "/calculate": "POST - Calculate complete natal chart with all features",
             "/": "GET - This status page"
@@ -1129,8 +1130,20 @@ def home():
             "Combustion/Cazimi detection",
             "Mutual receptions",
             "Dispositor chain",
-            "Void of course Moon"
+            "Void of course Moon",
+            "True/Mean Node support (Western & Vedic)"
         ],
+        "parameters": {
+            "nodeType": {
+                "description": "Select node calculation type for Western or Vedic astrology",
+                "options": {
+                    "true": "True/Oscillating Node (default) - actual lunar node position",
+                    "mean": "Mean Node - averaged position (traditional Vedic)",
+                    "both": "Include both True and Mean nodes in calculation"
+                },
+                "default": "true"
+            }
+        },
         "house_systems": HOUSE_SYSTEMS,
         "aspects": list(ASPECTS.keys()),
         "fixed_stars": list(FIXED_STARS.keys()),
@@ -1152,11 +1165,12 @@ def calculate():
         include_fixed_stars = data.get('includeFixedStars', True)
         include_dignities = data.get('includeDignities', True)
         include_analysis = data.get('includeAnalysis', True)
+        node_type = data.get('nodeType', 'true')  # 'true', 'mean', or 'both'
         
         if house_system not in HOUSE_SYSTEMS:
             house_system = 'P'
 
-        print(f"INPUT: {birth_date} {birth_time} at ({latitude}, {longitude}) house_system={house_system} ({HOUSE_SYSTEMS[house_system]})")
+        print(f"INPUT: {birth_date} {birth_time} at ({latitude}, {longitude}) house_system={house_system} ({HOUSE_SYSTEMS[house_system]}) nodeType={node_type}")
 
         year, month, day = map(int, birth_date.split('-'))
         hour, minute = map(int, birth_time.split(':'))
@@ -1167,6 +1181,12 @@ def calculate():
 
         planets = []
         for name, planet_id in PLANETS.items():
+            # Handle node type selection
+            if node_type == 'true' and name == 'Mean North Node':
+                continue
+            if node_type == 'mean' and name == 'True North Node':
+                continue
+            
             try:
                 result = swe.calc_ut(jd, planet_id)
                 longitude_deg = result[0][0]
@@ -1177,8 +1197,15 @@ def calculate():
                 sign = get_zodiac_sign(longitude_deg)
                 full_degree = normalize_degree(longitude_deg)
                 
+                # Normalize node names for output (remove True/Mean prefix when only one is selected)
+                display_name = name
+                if name == 'True North Node' and node_type == 'true':
+                    display_name = 'North Node'
+                elif name == 'Mean North Node' and node_type == 'mean':
+                    display_name = 'North Node'
+                
                 planet_data = {
-                    'name': name,
+                    'name': display_name,
                     'fullDegree': full_degree,
                     'degreeInSign': full_degree % 30.0,
                     'sign': sign,
@@ -1188,6 +1215,11 @@ def calculate():
                     'speed': speed,
                     'isRetro': speed < 0
                 }
+                
+                # Add node type indicator when both are included
+                if name in ['True North Node', 'Mean North Node']:
+                    planet_data['nodeType'] = 'true' if name == 'True North Node' else 'mean'
+                    planet_data['vedicName'] = 'Rahu'
                 
                 planets.append(planet_data)
             except Exception as e:
@@ -1242,22 +1274,39 @@ def calculate():
                 if sect_status:
                     planet_data['sect'] = sect_status
 
-        # South Node
-        north_node = next((p for p in planets if p['name'] == 'North Node'), None)
-        if north_node:
-            south_node_deg = normalize_degree(north_node['fullDegree'] + 180.0)
-            south_sign = get_zodiac_sign(south_node_deg)
-            planets.append({
-                'name': 'South Node',
-                'fullDegree': south_node_deg,
-                'degreeInSign': south_node_deg % 30.0,
-                'sign': south_sign,
-                'signData': get_sign_data(south_sign),
-                'latitude': -north_node['latitude'],
-                'distance': north_node['distance'],
-                'speed': north_node['speed'],
-                'isRetro': True
-            })
+        # South Node(s) - calculate for each North Node present
+        for north_node_name in ['North Node', 'True North Node', 'Mean North Node']:
+            north_node = next((p for p in planets if p['name'] == north_node_name), None)
+            if north_node:
+                south_node_deg = normalize_degree(north_node['fullDegree'] + 180.0)
+                south_sign = get_zodiac_sign(south_node_deg)
+                
+                # Determine South Node name based on North Node name
+                if north_node_name == 'North Node':
+                    south_name = 'South Node'
+                elif north_node_name == 'True North Node':
+                    south_name = 'True South Node'
+                else:
+                    south_name = 'Mean South Node'
+                
+                south_node_data = {
+                    'name': south_name,
+                    'fullDegree': south_node_deg,
+                    'degreeInSign': south_node_deg % 30.0,
+                    'sign': south_sign,
+                    'signData': get_sign_data(south_sign),
+                    'latitude': -north_node['latitude'],
+                    'distance': north_node['distance'],
+                    'speed': north_node['speed'],
+                    'isRetro': True,
+                    'vedicName': 'Ketu'
+                }
+                
+                # Add node type indicator when both are included
+                if north_node_name in ['True North Node', 'Mean North Node']:
+                    south_node_data['nodeType'] = north_node.get('nodeType')
+                
+                planets.append(south_node_data)
 
         # Lilith variants
         mean_lilith = next((p for p in planets if p['name'] == 'Mean Lilith'), None)
@@ -1489,6 +1538,7 @@ def calculate():
             'julianDay': jd,
             'houseSystem': house_system,
             'houseSystemName': HOUSE_SYSTEMS.get(house_system, 'Unknown'),
+            'nodeType': node_type,
             'isDayChart': is_day_chart,
             'sect': sect_analysis,
             'planets': planets,
