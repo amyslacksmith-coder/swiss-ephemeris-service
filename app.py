@@ -683,6 +683,8 @@ def detect_aspect_patterns(aspects, planets):
     oppositions = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'opposition']
     sextiles = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'sextile']
     quincunxes = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'quincunx']
+    quintiles = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'quintile']
+    biquintiles = [(a['planet1'], a['planet2']) for a in aspects if a['aspect'] == 'biquintile']
     
     def has_aspect(p1, p2, aspect_list):
         return (p1, p2) in aspect_list or (p2, p1) in aspect_list
@@ -776,6 +778,7 @@ def detect_aspect_patterns(aspects, planets):
                     })
     
     # YOD (Finger of God): 2 planets sextile, both quincunx a third
+    yod_patterns = []  # Store Yods for Golden Yod detection
     for sx in sextiles:
         p1, p2 = sx
         for qx in quincunxes:
@@ -784,14 +787,59 @@ def detect_aspect_patterns(aspects, planets):
                 apex = qx[1] if qx[0] == p1 else qx[0]
             if apex and apex != p2:
                 if has_aspect(p2, apex, quincunxes):
-                    pattern = {
+                    yod_data = {
                         'pattern': 'Yod',
                         'planets': sorted([p1, p2, apex]),
                         'apex': apex,
+                        'base_planets': [p1, p2],
                         'description': f'Finger of Fate - {apex} is the point of destiny requiring adjustment'
                     }
-                    if pattern not in patterns:
-                        patterns.append(pattern)
+                    if yod_data not in patterns:
+                        patterns.append(yod_data)
+                        yod_patterns.append(yod_data)
+    
+    # GOLDEN YOD (Golden Triangle): Yod + quintile or biquintile between any two planets
+    # The Golden Yod adds a "golden ratio" aspect (quintile 72° or biquintile 144°) to the Yod
+    for yod in yod_patterns:
+        apex = yod['apex']
+        base1, base2 = yod['base_planets'][0], yod['base_planets'][1]
+        
+        # Check for quintile/biquintile connections
+        golden_aspect = None
+        golden_planets = None
+        
+        # Check apex to base1
+        if has_aspect(apex, base1, quintiles):
+            golden_aspect = 'quintile'
+            golden_planets = (apex, base1)
+        elif has_aspect(apex, base1, biquintiles):
+            golden_aspect = 'biquintile'
+            golden_planets = (apex, base1)
+        # Check apex to base2
+        elif has_aspect(apex, base2, quintiles):
+            golden_aspect = 'quintile'
+            golden_planets = (apex, base2)
+        elif has_aspect(apex, base2, biquintiles):
+            golden_aspect = 'biquintile'
+            golden_planets = (apex, base2)
+        # Check base1 to base2 (in addition to sextile)
+        elif has_aspect(base1, base2, quintiles):
+            golden_aspect = 'quintile'
+            golden_planets = (base1, base2)
+        elif has_aspect(base1, base2, biquintiles):
+            golden_aspect = 'biquintile'
+            golden_planets = (base1, base2)
+        
+        if golden_aspect:
+            patterns.append({
+                'pattern': 'Golden Yod',
+                'planets': sorted([apex, base1, base2]),
+                'apex': apex,
+                'base_planets': [base1, base2],
+                'golden_aspect': golden_aspect,
+                'golden_connection': list(golden_planets),
+                'description': f'Golden Yod - Yod enhanced by {golden_aspect} ({golden_planets[0]}-{golden_planets[1]}), combining fate with creative/spiritual gifts'
+            })
     
     # KITE: Grand Trine + one planet opposite one of the trine planets (forming sextiles to the other two)
     for gt in [p for p in patterns if p['pattern'] == 'Grand Trine']:
@@ -1069,7 +1117,7 @@ def home():
             "Multiple house systems",
             "All major and minor aspects",
             "Declination aspects (parallel/contraparallel)",
-            "Aspect patterns (Grand Trine, T-Square, Yod, Kite, etc.)",
+            "Aspect patterns (Grand Trine, T-Square, Yod, Golden Yod, Kite, etc.)",
             "Essential dignities (domicile/exaltation/detriment/fall)",
             "Triplicity rulers (day/night/participating)",
             "Decans and Terms",
