@@ -119,6 +119,26 @@ DIGNITIES = {
     'Pluto': {'domicile': ['Scorpio'], 'exaltation': ['Aries'], 'detriment': ['Taurus'], 'fall': ['Libra']}
 }
 
+# Sign rulers for dispositor chain
+SIGN_RULERS = {
+    'Aries': 'Mars', 'Taurus': 'Venus', 'Gemini': 'Mercury', 'Cancer': 'Moon',
+    'Leo': 'Sun', 'Virgo': 'Mercury', 'Libra': 'Venus', 'Scorpio': 'Mars',
+    'Sagittarius': 'Jupiter', 'Capricorn': 'Saturn', 'Aquarius': 'Saturn', 'Pisces': 'Jupiter'
+}
+
+# Triplicity rulers (Dorothean system - most commonly used)
+TRIPLICITY_RULERS = {
+    'Fire': {'day': 'Sun', 'night': 'Jupiter', 'participating': 'Saturn'},
+    'Earth': {'day': 'Venus', 'night': 'Moon', 'participating': 'Mars'},
+    'Air': {'day': 'Saturn', 'night': 'Mercury', 'participating': 'Jupiter'},
+    'Water': {'day': 'Venus', 'night': 'Mars', 'participating': 'Moon'}
+}
+
+# Combustion orbs
+COMBUSTION_ORB = 8.5  # Standard combustion orb
+CAZIMI_ORB = 0.2833  # 17 arcminutes = cazimi (in the heart of the Sun)
+UNDER_BEAMS_ORB = 17  # Under the Sun's beams
+
 # Fixed stars (longitude as of J2000, with ~50" annual precession)
 FIXED_STARS = {
     'Algol': {'longitude': 56.17, 'nature': 'Saturn/Jupiter', 'meaning': 'Intense, passionate, misfortune if afflicted'},
@@ -204,6 +224,25 @@ def get_dignity(planet_name, sign):
     else:
         return {'type': 'peregrine', 'strength': 0, 'description': 'Planet has no essential dignity'}
 
+def get_triplicity(degree, is_day_chart):
+    """Get triplicity ruler based on element and sect (day/night)"""
+    sign = get_zodiac_sign(degree)
+    element = ELEMENTS.get(sign)
+    
+    if not element or element not in TRIPLICITY_RULERS:
+        return None
+    
+    rulers = TRIPLICITY_RULERS[element]
+    
+    return {
+        'element': element,
+        'day_ruler': rulers['day'],
+        'night_ruler': rulers['night'],
+        'participating_ruler': rulers['participating'],
+        'active_ruler': rulers['day'] if is_day_chart else rulers['night'],
+        'is_day_chart': is_day_chart
+    }
+
 def get_decan(degree):
     """Get decan (10° subdivision) and its ruler"""
     degree_in_sign = degree % 30
@@ -274,6 +313,201 @@ def get_term(degree):
             }
     
     return None
+
+def check_combustion(planet_name, planet_degree, sun_degree):
+    """Check if planet is combust, cazimi, or under the beams"""
+    if planet_name == 'Sun':
+        return None
+    
+    diff = abs(planet_degree - sun_degree)
+    if diff > 180:
+        diff = 360 - diff
+    
+    if diff <= CAZIMI_ORB:
+        return {
+            'status': 'cazimi',
+            'orb': round(diff, 4),
+            'description': 'In the heart of the Sun - greatly strengthened'
+        }
+    elif diff <= COMBUSTION_ORB:
+        return {
+            'status': 'combust',
+            'orb': round(diff, 2),
+            'description': 'Combust - hidden/weakened by Sun'
+        }
+    elif diff <= UNDER_BEAMS_ORB:
+        return {
+            'status': 'under_beams',
+            'orb': round(diff, 2),
+            'description': 'Under the beams - slightly weakened'
+        }
+    
+    return None
+
+def calculate_sect(is_day_chart):
+    """Calculate sect (day/night) dignities for planets"""
+    return {
+        'is_day_chart': is_day_chart,
+        'sect_light': 'Sun' if is_day_chart else 'Moon',
+        'day_sect': {
+            'light': 'Sun',
+            'benefic': 'Jupiter',
+            'malefic': 'Saturn'
+        },
+        'night_sect': {
+            'light': 'Moon',
+            'benefic': 'Venus',
+            'malefic': 'Mars'
+        },
+        'in_sect_benefic': 'Jupiter' if is_day_chart else 'Venus',
+        'out_of_sect_benefic': 'Venus' if is_day_chart else 'Jupiter',
+        'in_sect_malefic': 'Saturn' if is_day_chart else 'Mars',
+        'out_of_sect_malefic': 'Mars' if is_day_chart else 'Saturn',
+        'description': 'Day chart - Sun sect rules' if is_day_chart else 'Night chart - Moon sect rules'
+    }
+
+def get_planet_sect_status(planet_name, is_day_chart):
+    """Get whether a planet is in sect or out of sect"""
+    day_sect_planets = ['Sun', 'Jupiter', 'Saturn']
+    night_sect_planets = ['Moon', 'Venus', 'Mars']
+    
+    if planet_name in day_sect_planets:
+        in_sect = is_day_chart
+    elif planet_name in night_sect_planets:
+        in_sect = not is_day_chart
+    else:
+        return None
+    
+    return {
+        'in_sect': in_sect,
+        'sect': 'day' if planet_name in day_sect_planets else 'night',
+        'description': 'In sect - operates more constructively' if in_sect else 'Out of sect - operates more problematically'
+    }
+
+def find_mutual_receptions(planets):
+    """Find mutual receptions (two planets in each other's signs)"""
+    receptions = []
+    
+    # Get planets with their signs
+    planet_signs = {}
+    for p in planets:
+        if p['name'] in SIGN_RULERS.values():
+            planet_signs[p['name']] = p['sign']
+    
+    # Check for mutual receptions
+    checked = set()
+    for p1_name, p1_sign in planet_signs.items():
+        for p2_name, p2_sign in planet_signs.items():
+            if p1_name != p2_name and (p2_name, p1_name) not in checked:
+                # Check if p1 is in p2's sign AND p2 is in p1's sign
+                p1_rules = [s for s, r in SIGN_RULERS.items() if r == p1_name]
+                p2_rules = [s for s, r in SIGN_RULERS.items() if r == p2_name]
+                
+                if p1_sign in p2_rules and p2_sign in p1_rules:
+                    receptions.append({
+                        'planet1': p1_name,
+                        'planet1_sign': p1_sign,
+                        'planet2': p2_name,
+                        'planet2_sign': p2_sign,
+                        'type': 'domicile',
+                        'description': f'{p1_name} in {p1_sign} (ruled by {p2_name}) and {p2_name} in {p2_sign} (ruled by {p1_name})'
+                    })
+                    checked.add((p1_name, p2_name))
+    
+    return receptions
+
+def calculate_dispositor_chain(planets):
+    """Calculate dispositor chain and find final dispositor"""
+    # Build planet -> sign mapping
+    planet_signs = {}
+    for p in planets:
+        if p['name'] in ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']:
+            planet_signs[p['name']] = p['sign']
+    
+    # Build dispositor chain
+    chain = {}
+    for planet, sign in planet_signs.items():
+        ruler = SIGN_RULERS.get(sign)
+        chain[planet] = {
+            'sign': sign,
+            'dispositor': ruler,
+            'in_own_sign': ruler == planet
+        }
+    
+    # Find final dispositor (planet that rules its own sign, or mutual reception loop)
+    final_dispositor = None
+    for planet, data in chain.items():
+        if data['in_own_sign']:
+            final_dispositor = planet
+            break
+    
+    # If no planet in own sign, check for mutual reception as final
+    if not final_dispositor:
+        # Follow chain to find loop
+        for start_planet in chain:
+            visited = set()
+            current = start_planet
+            path = []
+            while current and current not in visited:
+                visited.add(current)
+                path.append(current)
+                current = chain.get(current, {}).get('dispositor')
+            
+            if current in visited:
+                # Found a loop
+                loop_start = path.index(current)
+                loop = path[loop_start:]
+                if len(loop) == 2:
+                    final_dispositor = f"Mutual reception: {loop[0]}-{loop[1]}"
+                else:
+                    final_dispositor = f"Dispositor loop: {' -> '.join(loop)}"
+                break
+    
+    return {
+        'chain': chain,
+        'final_dispositor': final_dispositor,
+        'has_final_dispositor': final_dispositor is not None and 'loop' not in str(final_dispositor).lower()
+    }
+
+def calculate_void_of_course_moon(moon_data, planets, aspects):
+    """Calculate if Moon is void of course (no more aspects before leaving sign)"""
+    moon_deg = moon_data['fullDegree']
+    moon_sign = moon_data['sign']
+    moon_speed = moon_data.get('speed', 12)  # Average moon speed ~12°/day
+    
+    # Find degree where Moon leaves current sign
+    sign_index = SIGNS.index(moon_sign)
+    sign_end = (sign_index + 1) * 30
+    degrees_to_sign_end = sign_end - moon_deg
+    
+    # Get all applying aspects the Moon will make
+    applying_aspects = []
+    for asp in aspects:
+        if asp['planet1'] == 'Moon' or asp['planet2'] == 'Moon':
+            if asp.get('is_applying', False):
+                other_planet = asp['planet2'] if asp['planet1'] == 'Moon' else asp['planet1']
+                # Only count traditional planets for VOC
+                if other_planet in ['Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn']:
+                    applying_aspects.append(asp)
+    
+    # Check if any applying aspects complete before Moon leaves sign
+    will_perfect_aspect = False
+    for asp in applying_aspects:
+        # Rough check: if orb is less than degrees to sign end, aspect will perfect
+        if asp['orb'] < degrees_to_sign_end:
+            will_perfect_aspect = True
+            break
+    
+    is_void = not will_perfect_aspect
+    
+    return {
+        'is_void_of_course': is_void,
+        'moon_degree': round(moon_deg, 2),
+        'moon_sign': moon_sign,
+        'degrees_to_sign_change': round(degrees_to_sign_end, 2),
+        'applying_aspects_count': len(applying_aspects),
+        'description': 'Moon void of course - actions may not manifest as intended' if is_void else 'Moon applying to aspects - normal functionality'
+    }
 
 def check_fixed_star_conjunctions(planets, orb=1.5):
     """Check for fixed star conjunctions"""
@@ -825,7 +1059,7 @@ def calculate_hemisphere_emphasis(planets, asc_deg, mc_deg):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "3.0 Platinum",
+        "version": "4.0 Ultimate",
         "endpoints": {
             "/calculate": "POST - Calculate complete natal chart with all features",
             "/": "GET - This status page"
@@ -836,12 +1070,18 @@ def home():
             "All major and minor aspects",
             "Declination aspects (parallel/contraparallel)",
             "Aspect patterns (Grand Trine, T-Square, Yod, Kite, etc.)",
-            "Essential dignities",
+            "Essential dignities (domicile/exaltation/detriment/fall)",
+            "Triplicity rulers (day/night/participating)",
             "Decans and Terms",
             "Fixed star conjunctions",
             "Chart shape analysis",
             "Element/Modality/Polarity balance",
-            "Hemisphere emphasis"
+            "Hemisphere emphasis",
+            "Sect analysis (day/night chart)",
+            "Combustion/Cazimi detection",
+            "Mutual receptions",
+            "Dispositor chain",
+            "Void of course Moon"
         ],
         "house_systems": HOUSE_SYSTEMS,
         "aspects": list(ASPECTS.keys()),
@@ -901,14 +1141,58 @@ def calculate():
                     'isRetro': speed < 0
                 }
                 
-                if include_dignities and name in DIGNITIES:
-                    planet_data['dignity'] = get_dignity(name, sign)
-                    planet_data['decan'] = get_decan(full_degree)
-                    planet_data['term'] = get_term(full_degree)
-                
                 planets.append(planet_data)
             except Exception as e:
                 print(f"Could not calculate {name}: {e}")
+
+        # Calculate is_day_chart early (needed for triplicity and sect)
+        sun_data = next((p for p in planets if p['name'] == 'Sun'), None)
+        moon_data = next((p for p in planets if p['name'] == 'Moon'), None)
+        
+        # Houses (calculate early for day/night determination)
+        houses_result = swe.houses_ex(jd, latitude, longitude, house_system.encode())
+        cusps = houses_result[0]
+        ascmc = houses_result[1]
+
+        asc_deg = normalize_degree(ascmc[0])
+        mc_deg = normalize_degree(ascmc[1])
+        armc = ascmc[2]
+        vertex_deg = normalize_degree(ascmc[3])
+
+        desc_deg = normalize_degree(asc_deg + 180)
+        ic_deg = normalize_degree(mc_deg + 180)
+
+        # Determine day/night chart
+        is_day_chart = False
+        if sun_data:
+            sun_lon = sun_data['fullDegree']
+            sun_from_asc = normalize_degree(sun_lon - asc_deg)
+            is_day_chart = sun_from_asc >= 180
+
+        print(f"HOUSES ({HOUSE_SYSTEMS[house_system]}): ASC={asc_deg:.4f}, MC={mc_deg:.4f}, isDayChart={is_day_chart}")
+
+        # Now add dignities with triplicity (needs is_day_chart)
+        for planet_data in planets:
+            name = planet_data['name']
+            sign = planet_data['sign']
+            full_degree = planet_data['fullDegree']
+            
+            if include_dignities and name in DIGNITIES:
+                planet_data['dignity'] = get_dignity(name, sign)
+                planet_data['triplicity'] = get_triplicity(full_degree, is_day_chart)
+                planet_data['decan'] = get_decan(full_degree)
+                planet_data['term'] = get_term(full_degree)
+                
+                # Add combustion check
+                if sun_data and name != 'Sun':
+                    combustion = check_combustion(name, full_degree, sun_data['fullDegree'])
+                    if combustion:
+                        planet_data['combustion'] = combustion
+                
+                # Add sect status
+                sect_status = get_planet_sect_status(name, is_day_chart)
+                if sect_status:
+                    planet_data['sect'] = sect_status
 
         # South Node
         north_node = next((p for p in planets if p['name'] == 'North Node'), None)
@@ -998,21 +1282,6 @@ def calculate():
         except Exception as e:
             print(f"Could not calculate Selena h56: {e}")
 
-        # Houses
-        houses_result = swe.houses_ex(jd, latitude, longitude, house_system.encode())
-        cusps = houses_result[0]
-        ascmc = houses_result[1]
-
-        asc_deg = normalize_degree(ascmc[0])
-        mc_deg = normalize_degree(ascmc[1])
-        armc = ascmc[2]
-        vertex_deg = normalize_degree(ascmc[3])
-
-        desc_deg = normalize_degree(asc_deg + 180)
-        ic_deg = normalize_degree(mc_deg + 180)
-
-        print(f"HOUSES ({HOUSE_SYSTEMS[house_system]}): ASC={asc_deg:.4f}, MC={mc_deg:.4f}")
-
         # Add angles to planets for aspect calculation
         asc_sign = get_zodiac_sign(asc_deg)
         mc_sign = get_zodiac_sign(mc_deg)
@@ -1029,14 +1298,9 @@ def calculate():
         })
 
         # Part of Fortune
-        sun_data = next((p for p in planets if p['name'] == 'Sun'), None)
-        moon_data = next((p for p in planets if p['name'] == 'Moon'), None)
-
         if sun_data and moon_data:
             sun_lon = sun_data['fullDegree']
             moon_lon = moon_data['fullDegree']
-            sun_from_asc = normalize_degree(sun_lon - asc_deg)
-            is_day_chart = sun_from_asc >= 180
 
             if is_day_chart:
                 pof_deg = normalize_degree(asc_deg + moon_lon - sun_lon)
@@ -1137,6 +1401,23 @@ def calculate():
             fixed_star_conjunctions = check_fixed_star_conjunctions(planets)
             print(f"FIXED STARS: Found {len(fixed_star_conjunctions)} conjunctions")
 
+        # Calculate sect analysis
+        sect_analysis = calculate_sect(is_day_chart)
+        
+        # Calculate mutual receptions
+        mutual_receptions = find_mutual_receptions(planets)
+        print(f"MUTUAL RECEPTIONS: Found {len(mutual_receptions)}")
+        
+        # Calculate dispositor chain
+        dispositor_chain = calculate_dispositor_chain(planets)
+        print(f"DISPOSITOR: Final = {dispositor_chain['final_dispositor']}")
+        
+        # Calculate void of course moon
+        void_of_course = None
+        if moon_data and aspects:
+            void_of_course = calculate_void_of_course_moon(moon_data, planets, aspects)
+            print(f"VOC MOON: {void_of_course['is_void_of_course']}")
+
         # Chart analysis
         analysis = {}
         if include_analysis:
@@ -1145,11 +1426,11 @@ def calculate():
             planets_for_analysis.append({'name': 'Midheaven', 'sign': mc_sign, 'fullDegree': mc_deg})
             
             analysis = {
-                'chartShape': calculate_chart_shape(planets),
-                'elementBalance': calculate_element_balance(planets_for_analysis),
-                'modalityBalance': calculate_modality_balance(planets_for_analysis),
-                'polarityBalance': calculate_polarity_balance(planets_for_analysis),
-                'hemisphereEmphasis': calculate_hemisphere_emphasis(planets, asc_deg, mc_deg)
+                'chart_shape': calculate_chart_shape(planets),
+                'element_balance': calculate_element_balance(planets_for_analysis),
+                'modality_balance': calculate_modality_balance(planets_for_analysis),
+                'polarity_balance': calculate_polarity_balance(planets_for_analysis),
+                'hemisphere_emphasis': calculate_hemisphere_emphasis(planets, asc_deg, mc_deg)
             }
 
         return jsonify({
@@ -1160,13 +1441,17 @@ def calculate():
             'julianDay': jd,
             'houseSystem': house_system,
             'houseSystemName': HOUSE_SYSTEMS.get(house_system, 'Unknown'),
-            'isDayChart': is_day_chart if sun_data and moon_data else None,
+            'isDayChart': is_day_chart,
+            'sect': sect_analysis,
             'planets': planets,
             'houses': houses,
             'aspects': aspects,
             'declinationAspects': declination_aspects,
             'aspectPatterns': patterns,
             'fixedStarConjunctions': fixed_star_conjunctions,
+            'mutualReceptions': mutual_receptions,
+            'dispositorChain': dispositor_chain,
+            'voidOfCourseMoon': void_of_course,
             'analysis': analysis,
             'calculatedAt': datetime.utcnow().isoformat() + 'Z'
         })
