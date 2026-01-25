@@ -181,6 +181,20 @@ ARABIC_PARTS = {
     'Part of Hidden Enemies': {'formula': 'ASC + 12th cusp - ruler of 12th'}
 }
 
+# ============================================
+# AYANAMSA MODES (for Vedic/Sidereal)
+# ============================================
+AYANAMSA_MODES = {
+    'lahiri': swe.SIDM_LAHIRI,
+    'raman': swe.SIDM_RAMAN,
+    'krishnamurti': swe.SIDM_KRISHNAMURTI,
+    'fagan_bradley': swe.SIDM_FAGAN_BRADLEY,
+    'yukteshwar': swe.SIDM_YUKTESHWAR,
+    'jn_bhasin': swe.SIDM_JN_BHASIN,
+    'true_citra': swe.SIDM_TRUE_CITRA,
+    'true_revati': swe.SIDM_TRUE_REVATI,
+}
+
 
 def normalize_degree(deg):
     deg = deg % 360.0
@@ -1048,7 +1062,7 @@ def calculate_hemisphere_emphasis(planets, asc_deg, mc_deg):
 def home():
     return jsonify({
         "status": "Swiss Ephemeris API is running",
-        "version": "4.1 Ultimate",
+        "version": "4.2 Ultimate + True Lahiri",
         "endpoints": {
             "/calculate": "POST - Calculate complete natal chart with all features",
             "/": "GET - This status page"
@@ -1071,7 +1085,8 @@ def home():
             "Mutual receptions",
             "Dispositor chain",
             "Void of course Moon",
-            "True/Mean Node support (Western & Vedic)"
+            "True/Mean Node support (Western & Vedic)",
+            "TRUE LAHIRI AYANAMSA (for Vedic accuracy on all dates)"
         ],
         "parameters": {
             "nodeType": {
@@ -1084,6 +1099,7 @@ def home():
                 "default": "true"
             }
         },
+        "ayanamsa_modes": list(AYANAMSA_MODES.keys()),
         "house_systems": HOUSE_SYSTEMS,
         "aspects": list(ASPECTS.keys()),
         "fixed_stars": list(FIXED_STARS.keys()),
@@ -1120,6 +1136,22 @@ def calculate():
         jd = swe.julday(year, month, day, time_decimal)
         print(f"Julian Day: {jd}")
 
+        # ============================================
+        # CALCULATE TRUE LAHIRI AYANAMSA
+        # This is the astronomically accurate Lahiri value
+        # for any date (including historical dates)
+        # ============================================
+        lahiri_ayanamsa = swe.get_ayanamsa_ut(jd, swe.SIDM_LAHIRI)
+        print(f"True Lahiri Ayanamsa: {lahiri_ayanamsa:.6f}°")
+        
+        # Also calculate other common ayanamsas for reference
+        ayanamsa_values = {
+            'lahiri': lahiri_ayanamsa,
+            'raman': swe.get_ayanamsa_ut(jd, swe.SIDM_RAMAN),
+            'krishnamurti': swe.get_ayanamsa_ut(jd, swe.SIDM_KRISHNAMURTI),
+            'fagan_bradley': swe.get_ayanamsa_ut(jd, swe.SIDM_FAGAN_BRADLEY),
+        }
+
         planets = []
         for name, planet_id in PLANETS.items():
             if node_type == 'true' and name == 'Mean North Node':
@@ -1152,7 +1184,9 @@ def calculate():
                     'latitude': latitude_deg,
                     'distance': distance,
                     'speed': speed,
-                    'isRetro': speed < 0
+                    'isRetro': speed < 0,
+                    # Include tropical longitude explicitly
+                    'true_longitude': full_degree
                 }
                 
                 if name in ['True North Node', 'Mean North Node']:
@@ -1229,7 +1263,8 @@ def calculate():
                     'distance': north_node['distance'],
                     'speed': north_node['speed'],
                     'isRetro': True,
-                    'vedicName': 'Ketu'
+                    'vedicName': 'Ketu',
+                    'true_longitude': south_node_deg
                 }
                 
                 if north_node_name in ['True North Node', 'Mean North Node']:
@@ -1248,7 +1283,8 @@ def calculate():
                 'latitude': mean_lilith['latitude'],
                 'distance': mean_lilith['distance'],
                 'speed': mean_lilith['speed'],
-                'isRetro': mean_lilith['isRetro']
+                'isRetro': mean_lilith['isRetro'],
+                'true_longitude': mean_lilith['fullDegree']
             })
             
             selena_deg = normalize_degree(mean_lilith['fullDegree'] + 180.0)
@@ -1262,7 +1298,8 @@ def calculate():
                 'latitude': -mean_lilith['latitude'],
                 'distance': mean_lilith['distance'],
                 'speed': mean_lilith['speed'],
-                'isRetro': False
+                'isRetro': False,
+                'true_longitude': selena_deg
             })
 
             mean_priapus_deg = normalize_degree(mean_lilith['fullDegree'] + 180.0)
@@ -1274,7 +1311,8 @@ def calculate():
                 'latitude': -mean_lilith['latitude'],
                 'distance': mean_lilith['distance'],
                 'speed': mean_lilith['speed'],
-                'isRetro': False
+                'isRetro': False,
+                'true_longitude': mean_priapus_deg
             })
 
         true_lilith = next((p for p in planets if p['name'] == 'True Lilith'), None)
@@ -1288,7 +1326,8 @@ def calculate():
                 'latitude': -true_lilith['latitude'],
                 'distance': true_lilith['distance'],
                 'speed': true_lilith['speed'],
-                'isRetro': False
+                'isRetro': False,
+                'true_longitude': true_priapus_deg
             })
 
         try:
@@ -1302,7 +1341,8 @@ def calculate():
                 'latitude': selena_h56_result[0][1],
                 'distance': selena_h56_result[0][2],
                 'speed': selena_h56_result[0][3],
-                'isRetro': selena_h56_result[0][3] < 0
+                'isRetro': selena_h56_result[0][3] < 0,
+                'true_longitude': normalize_degree(selena_h56_lon)
             })
         except Exception as e:
             print(f"Could not calculate Selena h56: {e}")
@@ -1318,7 +1358,8 @@ def calculate():
             'latitude': 0,
             'distance': 0,
             'speed': 0,
-            'isRetro': False
+            'isRetro': False,
+            'true_longitude': vertex_deg
         })
 
         if sun_data and moon_data:
@@ -1339,7 +1380,8 @@ def calculate():
                 'distance': 0,
                 'speed': 0,
                 'isRetro': False,
-                'is_day_chart': is_day_chart
+                'is_day_chart': is_day_chart,
+                'true_longitude': pof_deg
             })
             
             if is_day_chart:
@@ -1355,7 +1397,8 @@ def calculate():
                 'latitude': 0,
                 'distance': 0,
                 'speed': 0,
-                'isRetro': False
+                'isRetro': False,
+                'true_longitude': pos_deg
             })
 
         houses = {
@@ -1453,10 +1496,12 @@ def calculate():
             'latitude': latitude,
             'longitude': longitude,
             'julianDay': jd,
+            'julian_day': jd,  # Alias for compatibility
             'houseSystem': house_system,
             'houseSystemName': HOUSE_SYSTEMS.get(house_system, 'Unknown'),
             'nodeType': node_type,
-            'isDayChart': is_day_chart,
+            'is_day_chart': is_day_chart,
+            'isDayChart': is_day_chart,  # Alias for compatibility
             'sect': sect_analysis,
             'planets': planets,
             'houses': houses,
@@ -1468,6 +1513,16 @@ def calculate():
             'dispositorChain': dispositor_chain,
             'voidOfCourseMoon': void_of_course,
             'analysis': analysis,
+            # ============================================
+            # TRUE LAHIRI AYANAMSA - For Vedic calculations
+            # ============================================
+            'lahiri_ayanamsa': lahiri_ayanamsa,
+            'ayanamsa': {
+                'lahiri': lahiri_ayanamsa,
+                'raman': ayanamsa_values['raman'],
+                'krishnamurti': ayanamsa_values['krishnamurti'],
+                'fagan_bradley': ayanamsa_values['fagan_bradley'],
+            },
             'calculatedAt': datetime.utcnow().isoformat() + 'Z'
         })
 
@@ -1485,3 +1540,4 @@ def calculate():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(host='0.0.0.0', port=port, debug=True)
+
