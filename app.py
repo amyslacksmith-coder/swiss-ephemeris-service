@@ -1140,16 +1140,27 @@ def calculate():
         # CALCULATE TRUE LAHIRI AYANAMSA
         # This is the astronomically accurate Lahiri value
         # for any date (including historical dates)
+        # Note: pyswisseph requires set_sid_mode() first, then get_ayanamsa_ut(jd)
         # ============================================
-        lahiri_ayanamsa = swe.get_ayanamsa_ut(jd, swe.SIDM_LAHIRI)
+        swe.set_sid_mode(swe.SIDM_LAHIRI)
+        lahiri_ayanamsa = swe.get_ayanamsa_ut(jd)
         print(f"True Lahiri Ayanamsa: {lahiri_ayanamsa:.6f}°")
         
         # Also calculate other common ayanamsas for reference
+        swe.set_sid_mode(swe.SIDM_RAMAN)
+        raman_ayanamsa = swe.get_ayanamsa_ut(jd)
+        
+        swe.set_sid_mode(swe.SIDM_KRISHNAMURTI)
+        kp_ayanamsa = swe.get_ayanamsa_ut(jd)
+        
+        swe.set_sid_mode(swe.SIDM_FAGAN_BRADLEY)
+        fagan_ayanamsa = swe.get_ayanamsa_ut(jd)
+        
         ayanamsa_values = {
             'lahiri': lahiri_ayanamsa,
-            'raman': swe.get_ayanamsa_ut(jd, swe.SIDM_RAMAN),
-            'krishnamurti': swe.get_ayanamsa_ut(jd, swe.SIDM_KRISHNAMURTI),
-            'fagan_bradley': swe.get_ayanamsa_ut(jd, swe.SIDM_FAGAN_BRADLEY),
+            'raman': raman_ayanamsa,
+            'krishnamurti': kp_ayanamsa,
+            'fagan_bradley': fagan_ayanamsa,
         }
 
         planets = []
